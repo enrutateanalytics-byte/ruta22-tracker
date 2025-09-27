@@ -15,6 +15,8 @@ export const MapView = () => {
   const [selectedStop, setSelectedStop] = useState<ParsedRoute['stops'][0] | null>(null);
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   // Fallback simulation state (when API is not available)
   const [busPosition, setBusPosition] = useState({ lat: 32.5, lng: -117 });
@@ -34,13 +36,28 @@ export const MapView = () => {
   useEffect(() => {
     const fetchBusLocations = async () => {
       try {
+        setApiError(null);
         const units = await tebsaApi.getM1R18Units();
         setBusUnits(units);
         setIsApiConnected(true);
+        setIsRetrying(false);
         setLastUpdate(new Date());
+        console.log(`[MapView] Successfully fetched ${units.length} units from TEBSA API`);
       } catch (error) {
-        console.warn("TEBSA API not available, using simulation:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.warn("[MapView] TEBSA API not available, using simulation:", errorMessage);
+        
+        // Check if this is a retry attempt
+        if (errorMessage.includes('after') && errorMessage.includes('attempts')) {
+          setIsRetrying(true);
+          setApiError(`Conexión fallida: ${errorMessage.split(':')[1]?.trim() || errorMessage}`);
+        } else {
+          setApiError(errorMessage);
+        }
+        
         setIsApiConnected(false);
+        setIsRetrying(false);
+        
         // Fallback to simulation
         if (routeData?.points.length) {
           setCurrentRouteIndex(prev => {
@@ -143,17 +160,25 @@ export const MapView = () => {
             <div className="flex items-center space-x-2">
               {isApiConnected ? (
                 <Wifi className="w-4 h-4 text-primary" />
+              ) : isRetrying ? (
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               ) : (
-                <WifiOff className="w-4 h-4 text-muted-foreground" />
+                <WifiOff className="w-4 h-4 text-destructive" />
               )}
-              <div className={`w-3 h-3 rounded-full ${isApiConnected ? 'bg-primary animate-pulse' : 'bg-secondary'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${
+                isApiConnected ? 'bg-primary animate-pulse' : 
+                isRetrying ? 'bg-yellow-500 animate-pulse' : 
+                'bg-destructive'
+              }`}></div>
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <p className="font-medium text-sm">
                   {isApiConnected && busUnits.length > 0 
-                    ? `${busUnits.length} unidad${busUnits.length > 1 ? 'es' : ''} en servicio`
-                    : 'Unidad en servicio (simulación)'
+                    ? `${busUnits.length} unidad${busUnits.length > 1 ? 'es' : ''} en tiempo real`
+                    : isRetrying 
+                    ? 'Reintentando conexión...'
+                    : 'Modo simulación'
                   }
                 </p>
                 {isApiConnected && lastUpdate && (
@@ -164,7 +189,11 @@ export const MapView = () => {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
-                  Próxima parada: {nextStop?.name || 'Calculando...'}
+                  {apiError && !isApiConnected ? (
+                    <span className="text-destructive">Error: {apiError}</span>
+                  ) : (
+                    `Próxima parada: ${nextStop?.name || 'Calculando...'}`
+                  )}
                 </p>
                 {isApiConnected && busUnits.length > 0 && (
                   <p className="text-xs text-primary font-medium">
