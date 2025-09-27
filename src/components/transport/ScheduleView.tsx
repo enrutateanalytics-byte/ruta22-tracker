@@ -1,28 +1,62 @@
-import { Clock, MapPin, ArrowRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Clock, MapPin, ArrowRight, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { type CompleteRoute } from "@/services/routeService";
 
-const scheduleData = [
-  { time: "06:00", status: "completed", stop: "Terminal Central" },
-  { time: "06:15", status: "completed", stop: "Plaza Central" },
-  { time: "06:30", status: "completed", stop: "Av. Principal" },
-  { time: "06:45", status: "current", stop: "Hospital" },
-  { time: "07:00", status: "upcoming", stop: "Universidad" },
-  { time: "07:15", status: "upcoming", stop: "Terminal Norte" },
-  { time: "07:30", status: "upcoming", stop: "Zona Comercial" },
-  { time: "07:45", status: "upcoming", stop: "Terminal Central" },
-];
+interface ScheduleViewProps {
+  currentRoute?: CompleteRoute | null;
+}
 
-const nextDepartures = [
-  { time: "08:00", destination: "Terminal Norte", vehicle: "Unidad 101" },
-  { time: "08:30", destination: "Terminal Norte", vehicle: "Unidad 102" },
-  { time: "09:00", destination: "Terminal Norte", vehicle: "Unidad 103" },
-  { time: "09:30", destination: "Terminal Norte", vehicle: "Unidad 104" },
-];
+export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
+  if (!currentRoute) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No hay ruta seleccionada</p>
+        </div>
+      </div>
+    );
+  }
 
-export const ScheduleView = () => {
+  // Generate mock schedule data based on route stops
+  const schedules = currentRoute.stops.map((stop, index) => {
+    const baseTime = new Date();
+    baseTime.setHours(5, 20 + (index * 10), 0, 0); // Start at 5:20 AM, add 10 min per stop
+    
+    return {
+      time: baseTime.toLocaleTimeString('es-MX', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      }),
+      stop: stop.name,
+      status: index < 3 ? "completed" : index === 3 ? "current" : "upcoming"
+    };
+  });
+
+  const nextDepartures = [
+    { time: "08:00", destination: currentRoute.name, vehicle: "Unidad 101" },
+    { time: "08:30", destination: currentRoute.name, vehicle: "Unidad 102" },
+    { time: "09:00", destination: currentRoute.name, vehicle: "Unidad 103" },
+    { time: "09:30", destination: currentRoute.name, vehicle: "Unidad 104" },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-gradient-map">
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Route Header */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-primary">
+              <Calendar className="h-5 w-5" />
+              <span>{currentRoute.name}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{currentRoute.description}</p>
+          </CardContent>
+        </Card>
+
         {/* Current Route Progress */}
         <Card className="p-4 shadow-card-soft border-primary/20">
           <div className="flex items-center space-x-2 mb-4">
@@ -33,7 +67,7 @@ export const ScheduleView = () => {
           </div>
           
           <div className="space-y-3">
-            {scheduleData.map((item, index) => (
+            {schedules.map((item, index) => (
               <div key={index} className="flex items-center space-x-4">
                 <div className="flex flex-col items-center">
                   <div className={`w-4 h-4 rounded-full border-2 ${
@@ -43,7 +77,7 @@ export const ScheduleView = () => {
                       ? 'bg-secondary border-secondary animate-pulse'
                       : 'bg-transparent border-muted-foreground/30'
                   }`} />
-                  {index < scheduleData.length - 1 && (
+                  {index < schedules.length - 1 && (
                     <div className={`w-0.5 h-6 mt-1 ${
                       item.status === 'completed' ? 'bg-primary' : 'bg-muted-foreground/20'
                     }`} />

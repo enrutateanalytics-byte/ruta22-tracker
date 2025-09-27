@@ -4,22 +4,25 @@ import { MapView } from "@/components/transport/MapView";
 import { ScheduleView } from "@/components/transport/ScheduleView";
 import { InfoView } from "@/components/transport/InfoView";
 import { TabBar } from "@/components/transport/TabBar";
+import { RouteSelector } from "@/components/transport/RouteSelector";
+import { useRouteData } from "@/hooks/useRouteData";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
+  const { routes, currentRoute, setCurrentRoute, isLoadingRoutes } = useRouteData();
 
   const renderActiveView = () => {
     switch (activeTab) {
       case 'map':
-        return <MapView />;
+        return <MapView currentRoute={currentRoute} />;
       case 'schedule':
-        return <ScheduleView />;
+        return <ScheduleView currentRoute={currentRoute} />;
       case 'info':
-        return <InfoView />;
+        return <InfoView currentRoute={currentRoute} />;
       default:
-        return <MapView />;
+        return <MapView currentRoute={currentRoute} />;
     }
   };
 
@@ -28,11 +31,13 @@ const Index = () => {
       {/* Header */}
       <header className="bg-gradient-primary text-white px-4 py-3 shadow-transport">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-              <span className="text-primary font-bold text-sm">M1</span>
-            </div>
-            <h1 className="text-xl font-semibold">M1 R18 - Apoyo Urbi 2 / Barcelona</h1>
+          <div className="flex-1 mr-4">
+            <RouteSelector
+              routes={routes}
+              currentRoute={currentRoute}
+              onRouteChange={setCurrentRoute}
+              isLoading={isLoadingRoutes}
+            />
           </div>
           <Link to="/admin">
             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">

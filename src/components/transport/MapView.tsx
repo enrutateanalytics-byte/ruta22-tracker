@@ -1,104 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GoogleMapContainer } from "@/components/transport/GoogleMapContainer";
 import { GoogleBusMarker } from "@/components/transport/GoogleBusMarker";
 import { GoogleStopMarker } from "@/components/transport/GoogleStopMarker";
 import { GoogleRoutePolyline } from "@/components/transport/GoogleRoutePolyline";
-import { parseKMLFile, type ParsedRoute } from "@/utils/kmlParser";
-import { tebsaApi, type TebsaUnit } from "@/services/tebsaApi";
-import { TEBSA_CONFIG } from "@/config/tebsa";
+import { useRouteData } from "@/hooks/useRouteData";
 import { Button } from "@/components/ui/button";
 import { X, Wifi, WifiOff } from "lucide-react";
+import { type CompleteRoute } from "@/services/routeService";
 
-export const MapView = () => {
-  const [routeData, setRouteData] = useState<ParsedRoute | null>(null);
-  const [busUnits, setBusUnits] = useState<TebsaUnit[]>([]);
-  const [selectedStop, setSelectedStop] = useState<ParsedRoute['stops'][0] | null>(null);
-  const [isApiConnected, setIsApiConnected] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [isRetrying, setIsRetrying] = useState(false);
+interface MapViewProps {
+  currentRoute?: CompleteRoute;
+}
+
+export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) => {
+  const { 
+    currentRoute: hookCurrentRoute, 
+    busUnits, 
+    isApiConnected, 
+    lastUpdate, 
+    apiError, 
+    isRetrying,
+    simulatedBusPosition,
+    isLoadingRoutes 
+  } = useRouteData();
   
-  // Fallback simulation state (when API is not available)
-  const [busPosition, setBusPosition] = useState({ lat: 32.5, lng: -117 });
-  const [currentRouteIndex, setCurrentRouteIndex] = useState(0);
+  // Use prop route if provided, otherwise use hook route
+  const currentRoute = propCurrentRoute || hookCurrentRoute;
+  const [selectedStop, setSelectedStop] = useState<CompleteRoute['stops'][0] | null>(null);
 
-  // Load KML data on component mount
-  useEffect(() => {
-    parseKMLFile().then(data => {
-      setRouteData(data);
-      if (data.points.length > 0) {
-        setBusPosition(data.points[0]);
-      }
-    });
-  }, []);
-
-  // Fetch real-time bus locations from TEBSA API
-  useEffect(() => {
-    const fetchBusLocations = async () => {
-      try {
-        setApiError(null);
-        const units = await tebsaApi.getM1R18Units();
-        setBusUnits(units);
-        setIsApiConnected(true);
-        setIsRetrying(false);
-        setLastUpdate(new Date());
-        console.log(`[MapView] Successfully fetched ${units.length} units from TEBSA API`);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.warn("[MapView] TEBSA API not available, using simulation:", errorMessage);
-        
-        // Check if this is a retry attempt
-        if (errorMessage.includes('after') && errorMessage.includes('attempts')) {
-          setIsRetrying(true);
-          setApiError(`Conexión fallida: ${errorMessage.split(':')[1]?.trim() || errorMessage}`);
-        } else {
-          setApiError(errorMessage);
-        }
-        
-        setIsApiConnected(false);
-        setIsRetrying(false);
-        
-        // Fallback to simulation
-        if (routeData?.points.length) {
-          setCurrentRouteIndex(prev => {
-            const nextIndex = (prev + 1) % routeData.points.length;
-            setBusPosition(routeData.points[nextIndex]);
-            return nextIndex;
-          });
-        }
-      }
-    };
-
-    // Initial fetch
-    fetchBusLocations();
-
-    // Set up polling every 30 seconds for real-time updates
-    const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [routeData]);
-
-  // Fallback simulation when API is not available
-  useEffect(() => {
-    if (isApiConnected || !routeData?.points.length) return;
-    
-    const interval = setInterval(() => {
-      setCurrentRouteIndex(prev => {
-        const nextIndex = (prev + 1) % routeData.points.length;
-        setBusPosition(routeData.points[nextIndex]);
-        return nextIndex;
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [routeData, isApiConnected]);
-
-  if (!routeData) {
+  if (isLoadingRoutes) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-muted-foreground">Cargando ruta...</p>
+          <p className="text-muted-foreground">Cargando rutas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentRoute) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-muted-foreground">No hay rutas disponibles</p>
         </div>
       </div>
     );
@@ -108,11 +53,26 @@ export const MapView = () => {
   const getNextStop = () => {
     if (isApiConnected && busUnits.length > 0) {
       // For real units, find closest stop (simplified logic)
-      const firstUnit = busUnits[0];
-      return routeData?.stops[0]; // Simplified - should calculate closest stop
+      return currentRoute.stops[0]; // Simplified - should calculate closest stop
     } else {
-      // Fallback simulation logic
-      return routeData?.stops.find((_, index) => index === Math.floor(currentRouteIndex / (routeData?.points.length! / routeData?.stops.length!)));
+      // Fallback simulation logic - find closest stop to simulated position
+      if (!currentRoute.stops.length) return null;
+      
+      let closestStop = currentRoute.stops[0];
+      let minDistance = Infinity;
+      
+      currentRoute.stops.forEach(stop => {
+        const distance = Math.sqrt(
+          Math.pow(stop.latitude - simulatedBusPosition.lat, 2) + 
+          Math.pow(stop.longitude - simulatedBusPosition.lng, 2)
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestStop = stop;
+        }
+      });
+      
+      return closestStop;
     }
   };
   
@@ -125,13 +85,27 @@ export const MapView = () => {
         zoom={13}
       >
         {/* Línea de la ruta */}
-        <GoogleRoutePolyline points={routeData.points} />
+        {currentRoute.points.length > 0 && (
+          <GoogleRoutePolyline 
+            points={currentRoute.points.map(point => ({ 
+              lat: point.latitude, 
+              lng: point.longitude 
+            }))} 
+            color={currentRoute.color}
+          />
+        )}
         
         {/* Paradas */}
-        {routeData.stops.map((stop) => (
+        {currentRoute.stops.map((stop) => (
           <GoogleStopMarker
             key={stop.id}
-            stop={stop}
+            stop={{
+              id: stop.orderIndex,
+              name: stop.name,
+              lat: stop.latitude,
+              lng: stop.longitude,
+              eta: '5 min'
+            }}
             isSelected={selectedStop?.id === stop.id}
             onClick={() => setSelectedStop(selectedStop?.id === stop.id ? null : stop)}
           />
@@ -149,7 +123,7 @@ export const MapView = () => {
             />
           ))
         ) : (
-          <GoogleBusMarker position={busPosition} />
+          <GoogleBusMarker position={simulatedBusPosition} />
         )}
       </GoogleMapContainer>
 
@@ -224,7 +198,7 @@ export const MapView = () => {
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-secondary rounded-full"></div>
               <span className="text-sm text-muted-foreground">
-                Tiempo estimado: <span className="font-medium text-secondary">{selectedStop.eta}</span>
+                Tiempo estimado: <span className="font-medium text-secondary">5 min</span>
               </span>
             </div>
           </div>
