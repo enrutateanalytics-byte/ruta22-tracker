@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { MapView } from "@/components/transport/MapView";
 import { ScheduleView } from "@/components/transport/ScheduleView";
 import { InfoView } from "@/components/transport/InfoView";
 import { TabBar } from "@/components/transport/TabBar";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
@@ -24,11 +27,18 @@ const Index = () => {
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* Header */}
       <header className="bg-gradient-primary text-white px-4 py-3 shadow-transport">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-            <span className="text-primary font-bold text-sm">M1</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <span className="text-primary font-bold text-sm">M1</span>
+            </div>
+            <h1 className="text-xl font-semibold">M1 R18 - Apoyo Urbi 2 / Barcelona</h1>
           </div>
-          <h1 className="text-xl font-semibold">M1 R18 - Apoyo Urbi 2 / Barcelona</h1>
+          <Link to="/admin">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </header>
 
