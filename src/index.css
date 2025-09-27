@@ -17,32 +17,32 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 158 64% 52%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 158 64% 62%;
+    --primary: 15 98% 16%;
+    --primary-foreground: 44 95% 81%;
+    --primary-glow: 15 98% 26%;
 
-    --secondary: 199 89% 48%;
-    --secondary-foreground: 0 0% 100%;
-    --secondary-glow: 199 89% 58%;
+    --secondary: 44 95% 81%;
+    --secondary-foreground: 15 98% 16%;
+    --secondary-glow: 44 95% 91%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 44 30% 95%;
+    --muted-foreground: 15 30% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 44 80% 88%;
+    --accent-foreground: 15 98% 16%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 158 64% 52%;
+    --border: 44 40% 85%;
+    --input: 44 40% 85%;
+    --ring: 15 98% 16%;
 
     /* Transport App Theme */
-    --route-active: 158 64% 52%;
-    --route-inactive: 220 14.3% 95.9%;
-    --bus-icon: 199 89% 48%;
-    --stop-marker: 158 100% 30%;
+    --route-active: 15 98% 16%;
+    --route-inactive: 44 50% 90%;
+    --bus-icon: 15 98% 16%;
+    --stop-marker: 15 98% 26%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
@@ -82,33 +82,33 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 15 98% 8%;
+    --foreground: 44 95% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 15 98% 12%;
+    --card-foreground: 44 95% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 15 98% 12%;
+    --popover-foreground: 44 95% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 44 95% 81%;
+    --primary-foreground: 15 98% 16%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 15 50% 25%;
+    --secondary-foreground: 44 95% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 15 20% 30%;
+    --muted-foreground: 44 50% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 15 40% 20%;
+    --accent-foreground: 44 95% 95%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 44 95% 95%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 15 30% 25%;
+    --input: 15 30% 25%;
+    --ring: 44 95% 81%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
