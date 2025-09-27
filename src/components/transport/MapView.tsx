@@ -3,48 +3,60 @@ import { MapContainer } from "@/components/transport/MapContainer";
 import { BusMarker } from "@/components/transport/BusMarker";
 import { StopMarker } from "@/components/transport/StopMarker";
 import { RoutePolyline } from "@/components/transport/RoutePolyline";
-
-// Datos simulados de la ruta
-const routePoints = [
-  { lat: -34.6037, lng: -58.3816 },
-  { lat: -34.6047, lng: -58.3826 },
-  { lat: -34.6057, lng: -58.3836 },
-  { lat: -34.6067, lng: -58.3846 },
-  { lat: -34.6077, lng: -58.3856 },
-  { lat: -34.6087, lng: -58.3866 },
-];
-
-const busStops = [
-  { id: 1, name: "Plaza Central", lat: -34.6037, lng: -58.3816, eta: "2 min" },
-  { id: 2, name: "Av. Principal", lat: -34.6047, lng: -58.3826, eta: "5 min" },
-  { id: 3, name: "Hospital", lat: -34.6057, lng: -58.3836, eta: "8 min" },
-  { id: 4, name: "Universidad", lat: -34.6067, lng: -58.3846, eta: "12 min" },
-  { id: 5, name: "Terminal Norte", lat: -34.6087, lng: -58.3866, eta: "18 min" },
-];
+import { parseKMLFile, type ParsedRoute } from "@/utils/kmlParser";
 
 export const MapView = () => {
-  const [busPosition, setBusPosition] = useState({ lat: -34.6037, lng: -58.3816 });
-  const [selectedStop, setSelectedStop] = useState<typeof busStops[0] | null>(null);
+  const [routeData, setRouteData] = useState<ParsedRoute | null>(null);
+  const [busPosition, setBusPosition] = useState({ lat: 32.5, lng: -117 });
+  const [selectedStop, setSelectedStop] = useState<ParsedRoute['stops'][0] | null>(null);
+  const [currentRouteIndex, setCurrentRouteIndex] = useState(0);
 
-  // Simular movimiento del autobús
+  // Load KML data on component mount
   useEffect(() => {
-    let currentIndex = 0;
+    parseKMLFile().then(data => {
+      setRouteData(data);
+      if (data.points.length > 0) {
+        setBusPosition(data.points[0]);
+      }
+    });
+  }, []);
+
+  // Simulate bus movement along real route
+  useEffect(() => {
+    if (!routeData?.points.length) return;
+    
     const interval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % routePoints.length;
-      setBusPosition(routePoints[currentIndex]);
-    }, 3000);
+      setCurrentRouteIndex(prev => {
+        const nextIndex = (prev + 1) % routeData.points.length;
+        setBusPosition(routeData.points[nextIndex]);
+        return nextIndex;
+      });
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [routeData]);
+
+  if (!routeData) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-muted-foreground">Cargando ruta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const nextStop = routeData.stops.find((_, index) => index === Math.floor(currentRouteIndex / (routeData.points.length / routeData.stops.length)));
 
   return (
     <div className="relative h-full">
       <MapContainer>
         {/* Línea de la ruta */}
-        <RoutePolyline points={routePoints} />
+        <RoutePolyline points={routeData.points} />
         
         {/* Paradas */}
-        {busStops.map((stop) => (
+        {routeData.stops.map((stop) => (
           <StopMarker
             key={stop.id}
             stop={stop}
@@ -64,7 +76,9 @@ export const MapView = () => {
             <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
             <div>
               <p className="font-medium text-sm">Unidad en servicio</p>
-              <p className="text-xs text-muted-foreground">Próxima parada: {busStops[1].name}</p>
+              <p className="text-xs text-muted-foreground">
+                Próxima parada: {nextStop?.name || 'Calculando...'}
+              </p>
             </div>
           </div>
         </div>

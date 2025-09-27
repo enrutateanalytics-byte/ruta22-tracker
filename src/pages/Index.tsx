@@ -26,9 +26,9 @@ const Index = () => {
       <header className="bg-gradient-primary text-white px-4 py-3 shadow-transport">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-            <span className="text-primary font-bold text-sm">22</span>
+            <span className="text-primary font-bold text-sm">M1</span>
           </div>
-          <h1 className="text-xl font-semibold">Ruta 22</h1>
+          <h1 className="text-xl font-semibold">M1 R18 - Apoyo Urbi 2 / Barcelona</h1>
         </div>
       </header>
 

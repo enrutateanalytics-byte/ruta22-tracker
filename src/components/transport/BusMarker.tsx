@@ -5,9 +5,11 @@ interface BusMarkerProps {
 }
 
 export const BusMarker = ({ position }: BusMarkerProps) => {
-  // Convert lat/lng to pixel position (simplified simulation)
-  const x = ((position.lng + 58.3816) * 10000 % 400);
-  const y = ((position.lat + 34.6037) * 10000 % 600);
+  // Convert lat/lng to pixel position for Tijuana coordinates
+  const normalizedX = (position.lng + 117) * 4000;
+  const normalizedY = (33 - position.lat) * 6000;
+  const x = Math.max(30, Math.min(370, normalizedX % 400));
+  const y = Math.max(30, Math.min(570, normalizedY % 600));
 
   return (
     <div

@@ -8,13 +8,14 @@ interface RoutePolylineProps {
 }
 
 export const RoutePolyline = ({ points }: RoutePolylineProps) => {
-  // Convert lat/lng points to SVG path
+  // Convert lat/lng points to SVG path for Tijuana coordinates
   const pathData = points.map((point, index) => {
-    const x = ((point.lng + 58.3816) * 10000 % 400);
-    const y = ((point.lat + 34.6037) * 10000 % 600);
+    // Normalize coordinates for Tijuana area (lng: ~-117, lat: ~32.5)
+    const normalizedX = (point.lng + 117) * 4000;
+    const normalizedY = (33 - point.lat) * 6000;
     
-    const clampedX = Math.max(30, Math.min(370, x));
-    const clampedY = Math.max(30, Math.min(570, y));
+    const clampedX = Math.max(30, Math.min(370, normalizedX % 400));
+    const clampedY = Math.max(30, Math.min(570, normalizedY % 600));
     
     return `${index === 0 ? 'M' : 'L'} ${clampedX} ${clampedY}`;
   }).join(' ');

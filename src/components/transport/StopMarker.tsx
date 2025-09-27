@@ -16,9 +16,11 @@ interface StopMarkerProps {
 }
 
 export const StopMarker = ({ stop, isSelected, onClick }: StopMarkerProps) => {
-  // Convert lat/lng to pixel position (simplified simulation)
-  const x = ((stop.lng + 58.3816) * 10000 % 400);
-  const y = ((stop.lat + 34.6037) * 10000 % 600);
+  // Convert lat/lng to pixel position for Tijuana coordinates
+  const normalizedX = (stop.lng + 117) * 4000;
+  const normalizedY = (33 - stop.lat) * 6000;
+  const x = Math.max(20, Math.min(380, normalizedX % 400));
+  const y = Math.max(40, Math.min(560, normalizedY % 600));
 
   return (
     <button
