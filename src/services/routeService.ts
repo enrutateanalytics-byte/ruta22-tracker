@@ -29,8 +29,8 @@ export interface CompleteRoute {
   is_active: boolean
   created_at: string
   updated_at: string
-  stops: Array<StopData & { sequence_order: number }>
-  points: Array<RoutePointData & { sequence_order: number }>
+  stops: Array<StopData & { order_index: number }>
+  points: Array<RoutePointData & { order_index: number }>
 }
 
 class RouteService {
@@ -45,12 +45,47 @@ class RouteService {
   async getAllRoutes(): Promise<CompleteRoute[]> {
     try {
       const supabase = this.checkSupabaseConnection()
-      const { data, error } = await supabase.functions.invoke('routes', {
-        method: 'GET'
-      })
+      
+      // Fetch routes with their stops and points
+      const { data: routes, error: routesError } = await supabase
+        .from('routes')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
 
-      if (error) throw error
-      return data || []
+      if (routesError) throw routesError
+      if (!routes) return []
+
+      // Fetch stops and points for each route
+      const completeRoutes: CompleteRoute[] = []
+      
+      for (const route of routes) {
+        // Fetch stops for this route
+        const { data: stops, error: stopsError } = await supabase
+          .from('stops')
+          .select('*')
+          .eq('route_id', route.id)
+          .order('order_index')
+        
+        if (stopsError) throw stopsError
+
+        // Fetch route points for this route  
+        const { data: points, error: pointsError } = await supabase
+          .from('route_points')
+          .select('*')
+          .eq('route_id', route.id)
+          .order('order_index')
+        
+        if (pointsError) throw pointsError
+
+        completeRoutes.push({
+          ...route,
+          stops: stops || [],
+          points: points || []
+        })
+      }
+
+      return completeRoutes
     } catch (error) {
       console.error('Error fetching routes:', error)
       throw error

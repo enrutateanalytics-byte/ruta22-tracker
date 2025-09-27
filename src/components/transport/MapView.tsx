@@ -100,7 +100,7 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           <GoogleStopMarker
             key={stop.id}
             stop={{
-              id: stop.orderIndex,
+              id: stop.order_index,
               name: stop.name,
               lat: stop.latitude,
               lng: stop.longitude,
