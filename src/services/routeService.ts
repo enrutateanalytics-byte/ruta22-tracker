@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 
 export interface RouteData {
   id?: string
@@ -34,18 +34,8 @@ export interface CompleteRoute {
 }
 
 class RouteService {
-  private checkSupabaseConnection() {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
-      throw new Error('Supabase is not connected. Please connect to Supabase to use admin features.')
-    }
-    return supabase
-  }
-
   async getAllRoutes(): Promise<CompleteRoute[]> {
-    try {
-      const supabase = this.checkSupabaseConnection()
-      
+    try {      
       // Fetch routes with their stops and points
       const { data: routes, error: routesError } = await supabase
         .from('routes')
@@ -94,7 +84,6 @@ class RouteService {
 
   async getRoute(routeId: string): Promise<CompleteRoute> {
     try {
-      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
         method: 'GET'
       })
@@ -113,7 +102,6 @@ class RouteService {
     points: RoutePointData[]
   ): Promise<{ success: boolean; route: any }> {
     try {
-      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke('routes', {
         method: 'POST',
         body: { route, stops, points }
@@ -134,7 +122,6 @@ class RouteService {
     points: RoutePointData[]
   ): Promise<{ success: boolean }> {
     try {
-      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
         method: 'PUT',
         body: { route, stops, points }
@@ -150,7 +137,6 @@ class RouteService {
 
   async deleteRoute(routeId: string): Promise<{ success: boolean }> {
     try {
-      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
         method: 'DELETE'
       })
