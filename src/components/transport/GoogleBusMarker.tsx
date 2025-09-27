@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bus } from "lucide-react";
+import busIcon from "@/assets/icono_autobus.png";
 
 interface GoogleBusMarkerProps {
   position: { lat: number; lng: number };
@@ -7,20 +7,6 @@ interface GoogleBusMarkerProps {
   orientation?: number;
   unitId?: string;
 }
-
-// Bus icon SVG path for Google Maps marker
-const BUS_ICON_SVG = `
-<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="m8 6 4-4 4 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M10.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM13.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" fill="white"/>
-  <path d="M8 8h8l-1 13H9L8 8ZM7 8h10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="6" y="8" width="12" height="13" rx="1" fill="hsl(15 98% 16%)" stroke="white" stroke-width="2"/>
-  <circle cx="9" cy="18" r="1" fill="white"/>
-  <circle cx="15" cy="18" r="1" fill="white"/>
-  <rect x="7" y="10" width="10" height="6" rx="1" fill="hsl(44 95% 81%)" stroke="none"/>
-</svg>
-`;
 
 export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitId }: GoogleBusMarkerProps) => {
   const [marker, setMarker] = useState<any>(null);
@@ -32,13 +18,12 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
 
     const map = mapElement.mapInstance;
 
-    // Create custom bus icon using SVG data URL
-    const scale = velocity > 0 ? 1.2 + Math.min(velocity / 50, 0.8) : 1.2;
-    const busIcon = {
-      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(BUS_ICON_SVG)}`,
-      scaledSize: new (window as any).google.maps.Size(32 * scale, 32 * scale),
-      anchor: new (window as any).google.maps.Point(16 * scale, 16 * scale),
-      rotation: orientation,
+    // Create custom bus icon using the uploaded icon
+    const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
+    const busIconConfig = {
+      url: busIcon,
+      scaledSize: new (window as any).google.maps.Size(40 * scale, 40 * scale),
+      anchor: new (window as any).google.maps.Point(20 * scale, 20 * scale),
     };
 
     // Create info window content
@@ -66,7 +51,7 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
       position: position,
       map: map,
       title: unitId ? `Unidad ${unitId}` : "M1 R18 - Autobús",
-      icon: busIcon,
+      icon: busIconConfig,
       zIndex: 1000,
     });
 
@@ -97,12 +82,11 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
     
     // Update icon with new velocity and orientation
     if (velocity !== undefined && orientation !== undefined) {
-      const scale = velocity > 0 ? 1.2 + Math.min(velocity / 50, 0.8) : 1.2;
+      const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
       const updatedIcon = {
-        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(BUS_ICON_SVG)}`,
-        scaledSize: new (window as any).google.maps.Size(32 * scale, 32 * scale),
-        anchor: new (window as any).google.maps.Point(16 * scale, 16 * scale),
-        rotation: orientation,
+        url: busIcon,
+        scaledSize: new (window as any).google.maps.Size(40 * scale, 40 * scale),
+        anchor: new (window as any).google.maps.Point(20 * scale, 20 * scale),
       };
       marker.setIcon(updatedIcon);
     }
