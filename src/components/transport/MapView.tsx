@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { MapContainer } from "@/components/transport/MapContainer";
-import { BusMarker } from "@/components/transport/BusMarker";
-import { StopMarker } from "@/components/transport/StopMarker";
-import { RoutePolyline } from "@/components/transport/RoutePolyline";
+import { GoogleMapContainer } from "@/components/transport/GoogleMapContainer";
+import { GoogleBusMarker } from "@/components/transport/GoogleBusMarker";
+import { GoogleStopMarker } from "@/components/transport/GoogleStopMarker";
+import { GoogleRoutePolyline } from "@/components/transport/GoogleRoutePolyline";
 import { parseKMLFile, type ParsedRoute } from "@/utils/kmlParser";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 export const MapView = () => {
   const [routeData, setRouteData] = useState<ParsedRoute | null>(null);
@@ -51,13 +53,16 @@ export const MapView = () => {
 
   return (
     <div className="relative h-full">
-      <MapContainer>
+      <GoogleMapContainer 
+        center={{ lat: 32.4427, lng: -116.9883 }} // Centro de Tijuana
+        zoom={13}
+      >
         {/* Línea de la ruta */}
-        <RoutePolyline points={routeData.points} />
+        <GoogleRoutePolyline points={routeData.points} />
         
         {/* Paradas */}
         {routeData.stops.map((stop) => (
-          <StopMarker
+          <GoogleStopMarker
             key={stop.id}
             stop={stop}
             isSelected={selectedStop?.id === stop.id}
@@ -66,8 +71,8 @@ export const MapView = () => {
         ))}
         
         {/* Autobús en movimiento */}
-        <BusMarker position={busPosition} />
-      </MapContainer>
+        <GoogleBusMarker position={busPosition} />
+      </GoogleMapContainer>
 
       {/* Status bar */}
       <div className="absolute top-4 left-4 right-4 z-10">
@@ -90,12 +95,14 @@ export const MapView = () => {
           <div className="bg-white rounded-lg shadow-transport border border-primary/20 p-4">
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-semibold text-primary">{selectedStop.name}</h3>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSelectedStop(null)}
-                className="text-muted-foreground hover:text-foreground"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
               >
-                ✕
-              </button>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-secondary rounded-full"></div>
