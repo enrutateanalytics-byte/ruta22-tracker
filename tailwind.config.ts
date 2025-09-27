@@ -22,10 +22,20 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+          glow: "hsl(var(--secondary-glow))",
+        },
+        transport: {
+          route: {
+            active: "hsl(var(--route-active))",
+            inactive: "hsl(var(--route-inactive))",
+          },
+          bus: "hsl(var(--bus-icon))",
+          stop: "hsl(var(--stop-marker))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -58,10 +68,23 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-secondary": "var(--gradient-secondary)", 
+        "gradient-map": "var(--gradient-map)",
+      },
+      boxShadow: {
+        "transport": "var(--shadow-transport)",
+        "card-soft": "var(--shadow-card)",
+        "tab": "var(--shadow-tab)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      transitionTimingFunction: {
+        "bounce-bus": "var(--bounce-bus)",
       },
       keyframes: {
         "accordion-down": {

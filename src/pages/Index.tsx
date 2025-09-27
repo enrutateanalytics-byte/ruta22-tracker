@@ -1,12 +1,44 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { MapView } from "@/components/transport/MapView";
+import { ScheduleView } from "@/components/transport/ScheduleView";
+import { InfoView } from "@/components/transport/InfoView";
+import { TabBar } from "@/components/transport/TabBar";
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
+
+  const renderActiveView = () => {
+    switch (activeTab) {
+      case 'map':
+        return <MapView />;
+      case 'schedule':
+        return <ScheduleView />;
+      case 'info':
+        return <InfoView />;
+      default:
+        return <MapView />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
+      {/* Header */}
+      <header className="bg-gradient-primary text-white px-4 py-3 shadow-transport">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+            <span className="text-primary font-bold text-sm">22</span>
+          </div>
+          <h1 className="text-xl font-semibold">Ruta 22</h1>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-hidden">
+        {renderActiveView()}
+      </main>
+
+      {/* Tab Bar */}
+      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 };
