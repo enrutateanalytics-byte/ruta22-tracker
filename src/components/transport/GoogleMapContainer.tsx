@@ -1,8 +1,6 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface GoogleMapContainerProps {
   children: ReactNode;
@@ -74,49 +72,8 @@ const MapComponent = ({
 };
 
 
-const ApiKeyInput = ({ onApiKeySubmit }: { onApiKeySubmit: (key: string) => void }) => {
-  const [apiKey, setApiKey] = useState("");
-
-  return (
-    <div className="flex items-center justify-center h-full bg-gradient-map">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle className="text-center">Google Maps API Key</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground text-center">
-            Para mostrar el mapa real de Tijuana, necesitas una API key de Google Maps.
-          </p>
-          <Input
-            type="password"
-            placeholder="Ingresa tu API key de Google Maps"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && apiKey.trim() && onApiKeySubmit(apiKey.trim())}
-          />
-          <Button 
-            onClick={() => apiKey.trim() && onApiKeySubmit(apiKey.trim())}
-            disabled={!apiKey.trim()}
-            className="w-full"
-          >
-            Cargar Mapa
-          </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Obtén tu API key en{' '}
-            <a 
-              href="https://console.cloud.google.com/google/maps-apis" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Google Cloud Console
-            </a>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+// Google Maps API Key integrated directly
+const GOOGLE_MAPS_API_KEY = "AIzaSyDDX6lGRrJooUvhTY11EOuOT9n28E1lt4k";
 
 const render = (status: Status) => {
   switch (status) {
@@ -148,14 +105,8 @@ const render = (status: Status) => {
 };
 
 export const GoogleMapContainer = ({ children, center, zoom }: GoogleMapContainerProps) => {
-  const [apiKey, setApiKey] = useState<string>("");
-
-  if (!apiKey) {
-    return <ApiKeyInput onApiKeySubmit={setApiKey} />;
-  }
-
   return (
-    <Wrapper apiKey={apiKey} render={render}>
+    <Wrapper apiKey={GOOGLE_MAPS_API_KEY} render={render}>
       <MapComponent center={center} zoom={zoom}>
         {children}
       </MapComponent>
