@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 
 export interface RouteData {
   id?: string
@@ -34,8 +34,17 @@ export interface CompleteRoute {
 }
 
 class RouteService {
+  private checkSupabaseConnection() {
+    const supabase = getSupabaseClient()
+    if (!supabase) {
+      throw new Error('Supabase is not connected. Please connect to Supabase to use admin features.')
+    }
+    return supabase
+  }
+
   async getAllRoutes(): Promise<CompleteRoute[]> {
     try {
+      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke('routes', {
         method: 'GET'
       })
@@ -44,12 +53,13 @@ class RouteService {
       return data || []
     } catch (error) {
       console.error('Error fetching routes:', error)
-      throw new Error('Failed to fetch routes')
+      throw error
     }
   }
 
   async getRoute(routeId: string): Promise<CompleteRoute> {
     try {
+      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
         method: 'GET'
       })
@@ -58,7 +68,7 @@ class RouteService {
       return data
     } catch (error) {
       console.error('Error fetching route:', error)
-      throw new Error('Failed to fetch route')
+      throw error
     }
   }
 
@@ -68,6 +78,7 @@ class RouteService {
     points: RoutePointData[]
   ): Promise<{ success: boolean; route: any }> {
     try {
+      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke('routes', {
         method: 'POST',
         body: { route, stops, points }
@@ -77,7 +88,7 @@ class RouteService {
       return data
     } catch (error) {
       console.error('Error creating route:', error)
-      throw new Error('Failed to create route')
+      throw error
     }
   }
 
@@ -88,6 +99,7 @@ class RouteService {
     points: RoutePointData[]
   ): Promise<{ success: boolean }> {
     try {
+      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
         method: 'PUT',
         body: { route, stops, points }
@@ -97,12 +109,13 @@ class RouteService {
       return data
     } catch (error) {
       console.error('Error updating route:', error)
-      throw new Error('Failed to update route')
+      throw error
     }
   }
 
   async deleteRoute(routeId: string): Promise<{ success: boolean }> {
     try {
+      const supabase = this.checkSupabaseConnection()
       const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
         method: 'DELETE'
       })
@@ -111,7 +124,7 @@ class RouteService {
       return data
     } catch (error) {
       console.error('Error deleting route:', error)
-      throw new Error('Failed to delete route')
+      throw error
     }
   }
 

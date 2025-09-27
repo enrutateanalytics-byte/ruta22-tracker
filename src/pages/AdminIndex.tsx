@@ -1,13 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { RouteManager } from '@/components/admin/RouteManager'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Route, ArrowLeft } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Route, ArrowLeft, AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { getSupabaseClient } from '@/lib/supabase'
 
 const AdminIndex = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'routes'>('overview')
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false)
+
+  useEffect(() => {
+    const supabase = getSupabaseClient()
+    setIsSupabaseConnected(!!supabase)
+  }, [])
 
   if (activeSection === 'routes') {
     return (
@@ -51,10 +59,23 @@ const AdminIndex = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Supabase Connection Alert */}
+        {!isSupabaseConnected && (
+          <Alert className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Para usar las funciones de administración, necesitas conectar tu proyecto a Supabase. 
+              <br />
+              Haz clic en el botón verde "Supabase" en la parte superior derecha de la interfaz para conectar.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           
           {/* Routes Management */}
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('routes')}>
+          <Card className={`cursor-pointer hover:shadow-md transition-shadow ${!isSupabaseConnected ? 'opacity-50' : ''}`} 
+                onClick={() => isSupabaseConnected && setActiveSection('routes')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Gestión de Rutas</CardTitle>
               <Route className="h-4 w-4 text-muted-foreground" />
@@ -62,7 +83,7 @@ const AdminIndex = () => {
             <CardContent>
               <div className="text-2xl font-bold">Rutas</div>
               <p className="text-xs text-muted-foreground">
-                Crear, editar y gestionar rutas de autobús
+                {isSupabaseConnected ? 'Crear, editar y gestionar rutas de autobús' : 'Requiere conexión a Supabase'}
               </p>
               <div className="flex gap-2 mt-4">
                 <Badge variant="secondary">Crear</Badge>
@@ -104,7 +125,10 @@ const AdminIndex = () => {
             </CardHeader>
             <CardContent>
               <div className="flex gap-4 flex-wrap">
-                <Button onClick={() => setActiveSection('routes')}>
+                <Button 
+                  onClick={() => setActiveSection('routes')}
+                  disabled={!isSupabaseConnected}
+                >
                   <Route className="h-4 w-4 mr-2" />
                   Gestionar Rutas
                 </Button>
