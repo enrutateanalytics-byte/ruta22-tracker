@@ -1,4 +1,4 @@
-import { Clock, MapPin, ArrowRight, Calendar } from "lucide-react";
+import { Clock, MapPin, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type CompleteRoute } from "@/services/routeService";
 
@@ -33,13 +33,6 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
       status: index < 3 ? "completed" : index === 3 ? "current" : "upcoming"
     };
   });
-
-  const nextDepartures = [
-    { time: "08:00", destination: currentRoute.name, vehicle: "Unidad 101" },
-    { time: "08:30", destination: currentRoute.name, vehicle: "Unidad 102" },
-    { time: "09:00", destination: currentRoute.name, vehicle: "Unidad 103" },
-    { time: "09:30", destination: currentRoute.name, vehicle: "Unidad 104" },
-  ];
 
   return (
     <div className="flex flex-col h-full bg-gradient-map">
@@ -100,31 +93,6 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
                       <span className="text-xs font-medium">Actual</span>
                     </div>
                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Next Departures */}
-        <Card className="p-4 shadow-card-soft">
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-              <ArrowRight size={16} className="text-white" />
-            </div>
-            <h2 className="text-lg font-semibold text-secondary">Próximas Salidas</h2>
-          </div>
-          
-          <div className="space-y-3">
-            {nextDepartures.map((departure, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium text-foreground">{departure.time}</p>
-                  <p className="text-sm text-muted-foreground">{departure.destination}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-secondary">{departure.vehicle}</p>
-                  <p className="text-xs text-muted-foreground">Disponible</p>
                 </div>
               </div>
             ))}
