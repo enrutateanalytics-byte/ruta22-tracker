@@ -127,60 +127,7 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
         )}
       </GoogleMapContainer>
 
-      {/* Status bar - Only show when API is connected or retrying */}
-      {(isApiConnected || isRetrying) && (
-        <div className="absolute top-4 left-4 right-4 z-10">
-          <div className="bg-white rounded-lg shadow-card-soft px-4 py-3">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                {isApiConnected ? (
-                  <Wifi className="w-4 h-4 text-primary" />
-                ) : isRetrying ? (
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-destructive" />
-                )}
-                <div className={`w-3 h-3 rounded-full ${
-                  isApiConnected ? 'bg-primary animate-pulse' : 
-                  isRetrying ? 'bg-yellow-500 animate-pulse' : 
-                  'bg-destructive'
-                }`}></div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-sm">
-                    {isApiConnected && busUnits.length > 0 
-                      ? `${busUnits.length} unidad${busUnits.length > 1 ? 'es' : ''} en tiempo real`
-                      : isRetrying 
-                      ? 'Reintentando conexión...'
-                      : 'Modo simulación'
-                    }
-                  </p>
-                  {isApiConnected && lastUpdate && (
-                    <p className="text-xs text-muted-foreground">
-                      {lastUpdate.toLocaleTimeString()}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    {apiError && !isApiConnected ? (
-                      <span className="text-destructive">Error: {apiError}</span>
-                    ) : (
-                      `Próxima parada: ${nextStop?.name || 'Calculando...'}`
-                    )}
-                  </p>
-                  {isApiConnected && busUnits.length > 0 && (
-                    <p className="text-xs text-primary font-medium">
-                      {Math.round(busUnits[0].velocidad)} km/h
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Status bar removed as requested */}
 
       {/* Stop popup */}
       {selectedStop && (
