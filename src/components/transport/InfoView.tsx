@@ -133,28 +133,6 @@ export const InfoView = ({ currentRoute }: InfoViewProps) => {
           </div>
         </Card>
 
-        {/* Contact Information */}
-        <Card className="p-4 shadow-card-soft">
-          <h2 className="text-lg font-semibold text-secondary mb-4">Contacto y Soporte</h2>
-          
-          <div className="space-y-3">
-            <Button variant="outline" className="w-full justify-start" size="lg">
-              <Phone size={18} className="mr-3 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">+52 664 123-4567</p>
-                <p className="text-xs text-muted-foreground">Línea de atención TEBSA</p>
-              </div>
-            </Button>
-            
-            <Button variant="outline" className="w-full justify-start" size="lg">
-              <Mail size={18} className="mr-3 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">info@tebsa.mx</p>
-                <p className="text-xs text-muted-foreground">Consultas y sugerencias</p>
-              </div>
-            </Button>
-          </div>
-        </Card>
 
         {/* Service Features */}
         <Card className="p-4 shadow-card-soft border-primary/20">
