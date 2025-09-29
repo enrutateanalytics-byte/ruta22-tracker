@@ -4,18 +4,35 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Route, ArrowLeft, AlertTriangle } from 'lucide-react'
+import { Route, ArrowLeft, AlertTriangle, Upload } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getSupabaseClient } from '@/lib/supabase'
+import { updateRuta22WithKMLData } from '@/utils/updateRuta22'
+import { toast } from 'sonner'
 
 const AdminIndex = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'routes'>('overview')
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false)
+  const [isUpdatingRuta22, setIsUpdatingRuta22] = useState(false)
 
   useEffect(() => {
     const supabase = getSupabaseClient()
     setIsSupabaseConnected(!!supabase)
   }, [])
+
+  const handleUpdateRuta22 = async () => {
+    setIsUpdatingRuta22(true)
+    try {
+      toast.info("Actualizando Ruta 22 con datos del KML...")
+      await updateRuta22WithKMLData()
+      toast.success("¡Ruta 22 actualizada exitosamente!")
+    } catch (error) {
+      console.error("Error updating Ruta 22:", error)
+      toast.error("Error al actualizar la Ruta 22")
+    } finally {
+      setIsUpdatingRuta22(false)
+    }
+  }
 
   if (activeSection === 'routes') {
     return (
@@ -132,8 +149,13 @@ const AdminIndex = () => {
                   <Route className="h-4 w-4 mr-2" />
                   Gestionar Rutas
                 </Button>
-                <Button variant="outline" disabled>
-                  Importar Datos
+                <Button 
+                  variant="outline" 
+                  onClick={handleUpdateRuta22}
+                  disabled={!isSupabaseConnected || isUpdatingRuta22}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isUpdatingRuta22 ? "Actualizando..." : "Actualizar Ruta 22"}
                 </Button>
                 <Button variant="outline" disabled>
                   Exportar Datos
