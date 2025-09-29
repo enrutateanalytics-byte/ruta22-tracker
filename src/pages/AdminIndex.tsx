@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Route, ArrowLeft, AlertTriangle, Upload } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { getSupabaseClient } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { updateRuta22WithKMLData } from '@/utils/updateRuta22'
 import { toast } from 'sonner'
 
@@ -16,20 +16,24 @@ const AdminIndex = () => {
   const [isUpdatingRuta22, setIsUpdatingRuta22] = useState(false)
 
   useEffect(() => {
-    const supabase = getSupabaseClient()
-    setIsSupabaseConnected(!!supabase)
+    // Always connected since we're using the integrated Supabase client
+    setIsSupabaseConnected(true)
   }, [])
 
   const handleUpdateRuta22 = async () => {
+    console.log("🔄 Starting Ruta 22 update process...")
     setIsUpdatingRuta22(true)
     try {
       toast.info("Actualizando Ruta 22 con datos del KML...")
+      console.log("📞 Calling updateRuta22WithKMLData...")
       await updateRuta22WithKMLData()
+      console.log("✅ Update completed successfully!")
       toast.success("¡Ruta 22 actualizada exitosamente!")
     } catch (error) {
-      console.error("Error updating Ruta 22:", error)
+      console.error("❌ Error updating Ruta 22:", error)
       toast.error("Error al actualizar la Ruta 22")
     } finally {
+      console.log("🏁 Update process finished, resetting state...")
       setIsUpdatingRuta22(false)
     }
   }

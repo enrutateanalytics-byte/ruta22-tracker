@@ -14,17 +14,31 @@ export interface Ruta22Data {
 
 export async function parseRuta22KML(): Promise<Ruta22Data> {
   try {
+    console.log('🔗 Fetching KML file from /ruta-22.kml');
     const response = await fetch('/ruta-22.kml');
+    
+    if (!response.ok) {
+      console.error('❌ Failed to fetch KML file:', response.status, response.statusText);
+      throw new Error(`Failed to fetch KML file: ${response.status}`);
+    }
+    
     const kmlText = await response.text();
+    console.log('📄 KML file loaded, size:', kmlText.length, 'characters');
+    
     const parser = new DOMParser();
     const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
     
+    console.log('🔍 Parsing XML document...');
+    
     // Extract route points from LineString
     const lineString = kmlDoc.querySelector('LineString coordinates');
+    console.log('🛣️ Found LineString:', !!lineString);
     const routePoints: Array<{ lat: number; lng: number }> = [];
     
     if (lineString?.textContent) {
       const coords = lineString.textContent.trim().split(/\s+/);
+      console.log('📍 Found coordinates count:', coords.length);
+      
       coords.forEach(coord => {
         const [lng, lat] = coord.split(',').map(Number);
         if (!isNaN(lat) && !isNaN(lng)) {
@@ -33,8 +47,11 @@ export async function parseRuta22KML(): Promise<Ruta22Data> {
       });
     }
     
+    console.log('✅ Parsed', routePoints.length, 'route points');
+    
     // Extract stops from Placemarks (excluding LineString)
     const placemarks = kmlDoc.querySelectorAll('Placemark');
+    console.log('🚏 Found placemarks:', placemarks.length);
     const stops: Ruta22Stop[] = [];
     
     placemarks.forEach((placemark, index) => {
@@ -70,13 +87,15 @@ export async function parseRuta22KML(): Promise<Ruta22Data> {
       }
     });
     
+    console.log('🚏 Parsed', stops.length, 'stops:', stops.map(s => s.name));
+    
     return {
       points: routePoints,
       stops,
       routeName: 'Ruta 22'
     };
   } catch (error) {
-    console.error('Error parsing Ruta 22 KML:', error);
+    console.error('❌ Error parsing Ruta 22 KML:', error);
     return {
       points: [],
       stops: [],
