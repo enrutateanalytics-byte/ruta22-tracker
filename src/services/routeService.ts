@@ -122,13 +122,55 @@ class RouteService {
     points: RoutePointData[]
   ): Promise<{ success: boolean }> {
     try {
-      const { data, error } = await supabase.functions.invoke(`routes/${routeId}`, {
-        method: 'PUT',
-        body: { route, stops, points }
-      })
+      // 1) Update route metadata
+      const { error: routeErr } = await supabase
+        .from('routes')
+        .update({
+          name: route.name,
+          description: route.description ?? null,
+          color: route.color ?? '#FF5722',
+          is_active: route.is_active ?? true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', routeId)
 
-      if (error) throw error
-      return data
+      if (routeErr) throw routeErr
+
+      // 2) Remove existing stops and points (in parallel)
+      const [delStopsRes, delPointsRes] = await Promise.all([
+        supabase.from('stops').delete().eq('route_id', routeId),
+        supabase.from('route_points').delete().eq('route_id', routeId),
+      ])
+
+      if (delStopsRes.error) throw delStopsRes.error
+      if (delPointsRes.error) throw delPointsRes.error
+
+      // 3) Insert new stops and points (in parallel)
+      const stopsInsert = stops.map((s, i) => ({
+        route_id: routeId,
+        name: s.name,
+        latitude: s.latitude,
+        longitude: s.longitude,
+        order_index: i + 1,
+        estimated_time: (s as any).estimated_time ?? null,
+      }))
+
+      const pointsInsert = points.map((p, i) => ({
+        route_id: routeId,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        order_index: i + 1,
+      }))
+
+      const [insStopsRes, insPointsRes] = await Promise.all([
+        stopsInsert.length ? supabase.from('stops').insert(stopsInsert) : Promise.resolve({ error: null } as any),
+        pointsInsert.length ? supabase.from('route_points').insert(pointsInsert) : Promise.resolve({ error: null } as any),
+      ])
+
+      if (insStopsRes.error) throw insStopsRes.error
+      if (insPointsRes.error) throw insPointsRes.error
+
+      return { success: true }
     } catch (error) {
       console.error('Error updating route:', error)
       throw error
