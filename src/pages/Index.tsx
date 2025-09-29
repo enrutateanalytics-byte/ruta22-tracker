@@ -39,11 +39,11 @@ const Index = () => {
               isLoading={isLoadingRoutes}
             />
           </div>
-          <Link to="/admin">
+          {/* <Link to="/admin">
             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
               <Settings className="h-4 w-4" />
             </Button>
-          </Link>
+          </Link> */}
         </div>
       </header>
 
