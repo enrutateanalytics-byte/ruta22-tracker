@@ -27,7 +27,7 @@ export async function updateRuta22WithKMLData(): Promise<void> {
       // Create new route
       const routeData = {
         name: 'Ruta 22',
-        description: 'Ruta actualizada con coordenadas del KML 2025',
+        description: 'Ruta principal del sistema de transporte urbano',
         color: '#A52714',
         is_active: true
       };
@@ -61,7 +61,7 @@ export async function updateRuta22WithKMLData(): Promise<void> {
       // Update existing route
       const routeData = {
         name: 'Ruta 22',
-        description: 'Ruta actualizada con coordenadas del KML 2025',
+        description: 'Ruta principal del sistema de transporte urbano',
         color: '#A52714',
         is_active: true
       };
