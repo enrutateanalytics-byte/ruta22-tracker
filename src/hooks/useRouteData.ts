@@ -144,7 +144,7 @@ export const useRouteData = (): UseRouteDataReturn => {
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [currentRoute]);
+  }, [currentRoute, simulatedUnits]);
 
   // Move simulated units along the route
   useEffect(() => {
