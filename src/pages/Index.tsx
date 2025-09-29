@@ -6,29 +6,12 @@ import { InfoView } from "@/components/transport/InfoView";
 import { TabBar } from "@/components/transport/TabBar";
 import { RouteSelector } from "@/components/transport/RouteSelector";
 import { useRouteData } from "@/hooks/useRouteData";
-import { Settings, Download } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { importRealKMLRoute } from "@/utils/importKMLRoute";
-import { toast } from "sonner";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
   const { routes, currentRoute, setCurrentRoute, isLoadingRoutes } = useRouteData();
-  const [isImporting, setIsImporting] = useState(false);
-
-  const handleImportKML = async () => {
-    setIsImporting(true);
-    try {
-      toast.info("Importando ruta desde KML...");
-      await importRealKMLRoute();
-      toast.success("Ruta importada exitosamente!");
-    } catch (error) {
-      console.error("Error importing KML:", error);
-      toast.error("Error al importar la ruta KML");
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -56,23 +39,11 @@ const Index = () => {
               isLoading={isLoadingRoutes}
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white hover:bg-white/20"
-              onClick={handleImportKML}
-              disabled={isImporting}
-            >
-              <Download className="h-4 w-4 mr-1" />
-              {isImporting ? "Importando..." : "Importar KML"}
+          <Link to="/admin">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+              <Settings className="h-4 w-4" />
             </Button>
-            <Link to="/admin">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </div>
       </header>
 
