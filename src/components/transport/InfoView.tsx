@@ -191,12 +191,6 @@ export const InfoView = ({ currentRoute }: InfoViewProps) => {
           </div>
         </Card>
 
-        {/* App Version */}
-        <div className="text-center py-4">
-          <p className="text-xs text-muted-foreground">
-            TEBSA App v1.0.0 • Desarrollado con ❤️ en Tijuana
-          </p>
-        </div>
       </div>
     </div>
   );
