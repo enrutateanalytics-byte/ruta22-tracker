@@ -20,7 +20,6 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
     lastUpdate, 
     apiError, 
     isRetrying,
-    simulatedBusPosition,
     isLoadingRoutes 
   } = useRouteData();
   
@@ -52,10 +51,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
   // Calculate next stop based on current position
   const getNextStop = () => {
     if (isApiConnected && busUnits.length > 0) {
-      // For real units, find closest stop (simplified logic)
-      return currentRoute.stops[0]; // Simplified - should calculate closest stop
-    } else {
-      // Fallback simulation logic - find closest stop to simulated position
+      // Use the first bus unit position to calculate next stop
+      const firstUnit = busUnits[0];
       if (!currentRoute.stops.length) return null;
       
       let closestStop = currentRoute.stops[0];
@@ -63,8 +60,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
       
       currentRoute.stops.forEach(stop => {
         const distance = Math.sqrt(
-          Math.pow(stop.latitude - simulatedBusPosition.lat, 2) + 
-          Math.pow(stop.longitude - simulatedBusPosition.lng, 2)
+          Math.pow(stop.latitude - firstUnit.latitud, 2) + 
+          Math.pow(stop.longitude - firstUnit.longitud, 2)
         );
         if (distance < minDistance) {
           minDistance = distance;
@@ -73,6 +70,9 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
       });
       
       return closestStop;
+    } else {
+      // Fallback when no units available
+      return currentRoute.stops[0] || null;
     }
   };
   
@@ -111,8 +111,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         ))}
         
-        {/* Autobuses en tiempo real o simulación */}
-        {isApiConnected && busUnits.length > 0 ? (
+        {/* Autobuses en tiempo real */}
+        {busUnits.length > 0 ? (
           busUnits.map((unit, index) => (
             <GoogleBusMarker
               key={`unit-${unit.id}`}
@@ -123,7 +123,7 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
             />
           ))
         ) : (
-          <GoogleBusMarker position={simulatedBusPosition} />
+          <div /> // No buses to show
         )}
       </GoogleMapContainer>
 
