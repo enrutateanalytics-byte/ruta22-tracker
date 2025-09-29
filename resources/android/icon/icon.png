@@ -1,0 +1,12 @@
+# Android Icons
+# Place your Android app icons here
+# Required sizes:
+# - ldpi: 36x36
+# - mdpi: 48x48  
+# - hdpi: 72x72
+# - xhdpi: 96x96
+# - xxhdpi: 144x144
+# - xxxhdpi: 192x192
+
+# These will be automatically generated when you run:
+# npx capacitor-assets generate --android

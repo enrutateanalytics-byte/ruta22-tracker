@@ -15,4 +15,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: 'es2015',
+    minify: 'esbuild',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          maps: ['@googlemaps/react-wrapper'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-tabs']
+        }
+      }
+    }
+  },
 }));

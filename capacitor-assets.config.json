@@ -1,0 +1,17 @@
+{
+  "assets": {
+    "iconPath": "resources/icon.png",
+    "splashPath": "resources/splash.png"
+  },
+  "android": {
+    "iconBackgroundColor": "#ffffff",
+    "iconForegroundColor": "#1976d2",
+    "splashBackgroundColor": "#ffffff",
+    "splashDarkBackgroundColor": "#000000"
+  },
+  "ios": {
+    "iconBackgroundColor": "#ffffff",
+    "splashBackgroundColor": "#ffffff",
+    "splashDarkBackgroundColor": "#000000"
+  }
+}

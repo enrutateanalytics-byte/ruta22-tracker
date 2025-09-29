@@ -1,0 +1,7 @@
+# iOS Icons
+# Place your iOS app icons here
+# Required sizes for iOS:
+# - 20x20, 29x29, 40x40, 58x58, 60x60, 80x80, 87x87, 120x120, 180x180, 1024x1024
+
+# These will be automatically generated when you run:
+# npx capacitor-assets generate --ios

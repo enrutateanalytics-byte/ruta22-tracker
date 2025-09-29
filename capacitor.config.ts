@@ -4,10 +4,7 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.a8d559afa6eb489ebabf7d70ef980c74',
   appName: 'TEBSA Ruta 22',
   webDir: 'dist',
-  server: {
-    url: 'https://a8d559af-a6eb-489e-babf-7d70ef980c74.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+  bundledWebRuntime: false,
   plugins: {
     Geolocation: {
       permissions: {
@@ -41,7 +38,8 @@ const config: CapacitorConfig = {
       keystoreAliasPassword: undefined,
       releaseType: 'AAB',
       signingType: 'jarsigner'
-    }
+    },
+    webContentsDebuggingEnabled: false
   },
   ios: {
     scheme: 'TEBSA Ruta 22'

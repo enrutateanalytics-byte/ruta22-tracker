@@ -1,0 +1,6 @@
+# Splash Screen
+# Place your splash screen image here (2732x2732px recommended)
+# This will be used to generate splash screens for all platforms
+
+# Generate splash screens with:
+# npx capacitor-assets generate --splash
