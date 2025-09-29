@@ -152,7 +152,6 @@ class RouteService {
         latitude: s.latitude,
         longitude: s.longitude,
         order_index: i + 1,
-        estimated_time: (s as any).estimated_time ?? null,
       }))
 
       const pointsInsert = points.map((p, i) => ({
