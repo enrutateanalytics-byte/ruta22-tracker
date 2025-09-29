@@ -5,11 +5,13 @@ import { initializeCapacitor } from "./utils/capacitorUtils";
 
 console.log("[App] Bootstrapping application...")
 
-// Initialize Capacitor for native platforms
-initializeCapacitor().then(() => {
-  console.log("[App] Capacitor initialized successfully");
-}).catch((error) => {
-  console.error("[App] Capacitor initialization failed:", error);
-});
+// Initialize Capacitor for native platforms (non-blocking)
+initializeCapacitor()
+  .then(() => {
+    console.log("[App] Capacitor initialized successfully");
+  })
+  .catch((error) => {
+    console.log("[App] Capacitor not available, continuing with web version:", error.message);
+  });
 
 createRoot(document.getElementById("root")!).render(<App />);
