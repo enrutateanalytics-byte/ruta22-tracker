@@ -51,11 +51,11 @@ export const useRouteData = (): UseRouteDataReturn => {
         const fetchedRoutes = await routeService.getAllRoutes();
         setRoutes(fetchedRoutes);
         
-        // Set M1 R18 as default route if available
-        const m1Route = fetchedRoutes.find(route => 
-          route.name.includes('M1 R18') || route.name.includes('Apoyo Urbi')
+        // Set Ruta 22 as default route if available
+        const defaultRoute = fetchedRoutes.find(route => 
+          route.name.includes('Ruta 22')
         );
-        setCurrentRoute(m1Route || fetchedRoutes[0] || null);
+        setCurrentRoute(defaultRoute || fetchedRoutes[0] || null);
         
         console.log(`[useRouteData] Loaded ${fetchedRoutes.length} routes from database`);
       } catch (error) {
