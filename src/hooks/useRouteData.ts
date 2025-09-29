@@ -94,15 +94,25 @@ export const useRouteData = (): UseRouteDataReturn => {
         return units;
       };
       
-      setSimulatedUnits(createSimulatedUnits());
+      const newSimulatedUnits = createSimulatedUnits();
+      setSimulatedUnits(newSimulatedUnits);
+      
+      // Set simulation units as active immediately
+      setBusUnits(newSimulatedUnits);
+      setIsApiConnected(true);
+      setLastUpdate(new Date());
       setSimulationStep(0);
+      
+      console.log(`[useRouteData] Started simulation with ${newSimulatedUnits.length} units`);
     }
   }, [currentRoute]);
 
-  // Fetch real-time bus locations from TEBSA API
+  // Fetch real-time bus locations from TEBSA API (disabled - using simulation)
   useEffect(() => {
     if (!currentRoute) return;
 
+    // Commented out to use simulation directly
+    /*
     const fetchBusLocations = async () => {
       try {
         setApiError(null);
@@ -144,6 +154,7 @@ export const useRouteData = (): UseRouteDataReturn => {
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
 
     return () => clearInterval(interval);
+    */
   }, [currentRoute, simulatedUnits]);
 
   // Move simulated units along the route
@@ -174,18 +185,16 @@ export const useRouteData = (): UseRouteDataReturn => {
         
         setSimulatedUnits(updatedUnits);
         
-        // If we're in simulation mode, update busUnits too
-        if (isApiConnected) {
-          setBusUnits(updatedUnits);
-          setLastUpdate(new Date());
-        }
+        // Update busUnits with the new positions
+        setBusUnits(updatedUnits);
+        setLastUpdate(new Date());
         
         return nextStep;
       });
     }, 3000); // Update every 3 seconds
 
     return () => clearInterval(interval);
-  }, [simulatedUnits, currentRoute, isApiConnected]);
+  }, [simulatedUnits, currentRoute]);
 
   return {
     // Routes data
