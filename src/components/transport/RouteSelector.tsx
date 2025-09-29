@@ -42,6 +42,7 @@ export const RouteSelector = ({
   }
 
   const getBadgeText = (routeName: string) => {
+    if (routeName.includes('M1 R18')) return 'M1';
     if (routeName.includes('Ruta 22')) return '22';
     if (routeName.includes('M1')) return 'M1';
     if (routeName.includes('Centro')) return 'CP';

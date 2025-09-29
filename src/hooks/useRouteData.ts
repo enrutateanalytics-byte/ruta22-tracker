@@ -51,8 +51,10 @@ export const useRouteData = (): UseRouteDataReturn => {
         const fetchedRoutes = await routeService.getAllRoutes();
         setRoutes(fetchedRoutes);
         
-        // Set Ruta 22 as default route if available
+        // Set real route as default - prefer M1 R18, then Ruta 22, then any available
         const defaultRoute = fetchedRoutes.find(route => 
+          route.name.includes('M1 R18')
+        ) || fetchedRoutes.find(route => 
           route.name.includes('Ruta 22')
         );
         setCurrentRoute(defaultRoute || fetchedRoutes[0] || null);
