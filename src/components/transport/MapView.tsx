@@ -78,10 +78,25 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
   
   const nextStop = getNextStop();
 
+  // Calculate map center based on route points
+  const getRouteCenter = () => {
+    if (!currentRoute.points.length) {
+      return { lat: 32.4427, lng: -116.9883 }; // Fallback to Tijuana center
+    }
+    
+    const sumLat = currentRoute.points.reduce((sum, point) => sum + point.latitude, 0);
+    const sumLng = currentRoute.points.reduce((sum, point) => sum + point.longitude, 0);
+    
+    return {
+      lat: sumLat / currentRoute.points.length,
+      lng: sumLng / currentRoute.points.length
+    };
+  };
+
   return (
     <div className="relative h-full">
       <GoogleMapContainer 
-        center={{ lat: 32.4427, lng: -116.9883 }} // Centro de Tijuana
+        center={getRouteCenter()}
         zoom={13}
       >
         {/* Línea de la ruta */}
