@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GoogleMapContainer } from "@/components/transport/GoogleMapContainer";
 import { GoogleBusMarker } from "@/components/transport/GoogleBusMarker";
 import { GoogleStopMarker } from "@/components/transport/GoogleStopMarker";
 import { GoogleRoutePolyline } from "@/components/transport/GoogleRoutePolyline";
+import { GoogleUserLocationMarker } from "@/components/transport/GoogleUserLocationMarker";
 import { useRouteData } from "@/hooks/useRouteData";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import { Button } from "@/components/ui/button";
-import { X, Wifi, WifiOff } from "lucide-react";
+import { X, MapPin, Loader2 } from "lucide-react";
 import { type CompleteRoute } from "@/services/routeService";
+import { toast } from "sonner";
 
 interface MapViewProps {
   currentRoute?: CompleteRoute;
@@ -26,6 +29,58 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
   // Use prop route if provided, otherwise use hook route
   const currentRoute = propCurrentRoute || hookCurrentRoute;
   const [selectedStop, setSelectedStop] = useState<CompleteRoute['stops'][0] | null>(null);
+  
+  // Geolocation
+  const { position, error, loading, getCurrentPosition, watchPosition } = useGeolocation(true);
+  const watchIdRef = useRef<any>(null);
+
+  // Get user location on mount and watch for updates
+  useEffect(() => {
+    const initLocation = async () => {
+      try {
+        await getCurrentPosition();
+        
+        // Start watching position
+        const watchId = await watchPosition((newPosition) => {
+          // Position updates are handled automatically by the hook
+        });
+        
+        watchIdRef.current = watchId;
+      } catch (err) {
+        console.error('[MapView] Failed to get user location:', err);
+        toast.error('No se pudo obtener tu ubicación');
+      }
+    };
+
+    initLocation();
+
+    // Cleanup
+    return () => {
+      if (watchIdRef.current?.remove) {
+        watchIdRef.current.remove();
+      }
+    };
+  }, []);
+
+  // Center map on user location
+  const centerOnUserLocation = async () => {
+    try {
+      const newPosition = await getCurrentPosition();
+      
+      // Center the map
+      const mapElement = document.querySelector('[data-map]') as any;
+      if (mapElement?.mapInstance && newPosition) {
+        mapElement.mapInstance.setCenter({
+          lat: newPosition.coords.latitude,
+          lng: newPosition.coords.longitude
+        });
+        mapElement.mapInstance.setZoom(15);
+        toast.success('Centrado en tu ubicación');
+      }
+    } catch (err) {
+      toast.error('No se pudo obtener tu ubicación');
+    }
+  };
 
   if (isLoadingRoutes) {
     return (
@@ -140,7 +195,33 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
         ) : (
           <div /> // No buses to show
         )}
+
+        {/* User location marker */}
+        {position && (
+          <GoogleUserLocationMarker
+            position={{
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }}
+            accuracy={position.coords.accuracy}
+          />
+        )}
       </GoogleMapContainer>
+
+      {/* Center on user location button */}
+      <Button
+        onClick={centerOnUserLocation}
+        disabled={loading}
+        className="absolute top-4 right-4 z-10 h-10 w-10 p-0 rounded-full shadow-lg"
+        variant="default"
+        size="icon"
+      >
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <MapPin className="h-5 w-5" />
+        )}
+      </Button>
 
       {/* Status bar removed as requested */}
 
