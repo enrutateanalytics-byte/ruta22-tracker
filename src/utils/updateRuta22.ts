@@ -32,13 +32,8 @@ export async function updateRuta22WithKMLData(): Promise<void> {
         is_active: true
       };
       
-      const stopsData = kmlData.stops.map((stop, index) => ({
-        name: stop.name,
-        latitude: stop.lat,
-        longitude: stop.lng,
-        order_index: index + 1,
-        route_id: '' // Will be filled by the service
-      }));
+      // No stops - empty array
+      const stopsData: any[] = [];
       
       const pointsData = kmlData.points.map((point, index) => ({
         latitude: point.lat,
@@ -66,13 +61,8 @@ export async function updateRuta22WithKMLData(): Promise<void> {
         is_active: true
       };
       
-      const stopsData = kmlData.stops.map((stop, index) => ({
-        name: stop.name,
-        latitude: stop.lat,
-        longitude: stop.lng,
-        order_index: index + 1,
-        route_id: ruta22.id
-      }));
+      // No stops - empty array (will delete existing stops)
+      const stopsData: any[] = [];
       
       const pointsData = kmlData.points.map((point, index) => ({
         latitude: point.lat,
