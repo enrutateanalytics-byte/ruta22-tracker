@@ -32,7 +32,7 @@ export async function updateRuta22WithKMLData(): Promise<void> {
         is_active: true
       };
       
-      // No stops - empty array
+      // No stops - just use empty array for new route
       const stopsData: any[] = [];
       
       const pointsData = kmlData.points.map((point, index) => ({
@@ -61,8 +61,15 @@ export async function updateRuta22WithKMLData(): Promise<void> {
         is_active: true
       };
       
-      // No stops - empty array (will delete existing stops)
-      const stopsData: any[] = [];
+      // Keep existing stops - fetch them from database
+      const existingRoute = await routeService.getRoute(ruta22.id);
+      const stopsData = existingRoute.stops.map((stop, index) => ({
+        name: stop.name,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        order_index: index + 1,
+        route_id: ruta22.id
+      }));
       
       const pointsData = kmlData.points.map((point, index) => ({
         latitude: point.lat,

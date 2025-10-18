@@ -49,9 +49,45 @@ export async function parseRuta22KML(): Promise<Ruta22Data> {
     
     console.log('✅ Parsed', routePoints.length, 'route points');
     
-    // No stops - only show the route
+    // Extract stops from Placemarks (excluding LineString)
+    const placemarks = kmlDoc.querySelectorAll('Placemark');
+    console.log('🚏 Found placemarks:', placemarks.length);
     const stops: Ruta22Stop[] = [];
-    console.log('🚏 No stops configured - route only mode');
+    
+    placemarks.forEach((placemark, index) => {
+      const nameElement = placemark.querySelector('name');
+      const pointElement = placemark.querySelector('Point coordinates');
+      
+      // Skip if this is a LineString placemark
+      if (!pointElement) return;
+      
+      if (nameElement?.textContent && pointElement?.textContent) {
+        const [lng, lat] = pointElement.textContent.trim().split(',').map(Number);
+        const name = nameElement.textContent.trim();
+        
+        // Extract time from the name (format: "Location TIME")
+        let eta = '5 min';
+        const timeMatch = name.match(/(\d{1,2}:\d{2}\s?(?:AM|PM))/i);
+        if (timeMatch) {
+          eta = timeMatch[1];
+        }
+        
+        // Clean the stop name by removing the time part
+        const cleanName = name.replace(/\s*\d{1,2}:\d{2}\s?(?:AM|PM).*$/i, '').trim();
+        
+        if (!isNaN(lat) && !isNaN(lng) && cleanName) {
+          stops.push({
+            id: index + 1,
+            name: cleanName,
+            lat,
+            lng,
+            eta
+          });
+        }
+      }
+    });
+    
+    console.log('🚏 Parsed', stops.length, 'stops:', stops.map(s => s.name));
     
     return {
       points: routePoints,
