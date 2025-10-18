@@ -82,8 +82,6 @@ export async function updateRuta22WithKMLData(): Promise<void> {
       
       if (result.success) {
         console.log('✅ Ruta 22 updated successfully!');
-        // Reload the page to show the updated route
-        window.location.reload();
       } else {
         console.error('❌ Failed to update Ruta 22');
       }

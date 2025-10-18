@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MapView } from "@/components/transport/MapView";
 import { ScheduleView } from "@/components/transport/ScheduleView";
@@ -8,10 +8,41 @@ import { RouteSelector } from "@/components/transport/RouteSelector";
 import { useRouteData } from "@/hooks/useRouteData";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { updateRuta22WithKMLData } from "@/utils/updateRuta22";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
+  const [refreshKey, setRefreshKey] = useState(0);
   const { routes, currentRoute, setCurrentRoute, isLoadingRoutes } = useRouteData();
+
+  // Auto-update Ruta 22 from KML on mount
+  useEffect(() => {
+    const updateRoute = async () => {
+      try {
+        console.log('🔄 Auto-updating Ruta 22 from KML...');
+        await updateRuta22WithKMLData();
+        console.log('✅ Ruta 22 auto-updated successfully');
+        // Force refresh by incrementing key
+        setRefreshKey(prev => prev + 1);
+        // Reload the page to refresh route data
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } catch (error) {
+        console.error('❌ Failed to auto-update Ruta 22:', error);
+      }
+    };
+    
+    // Only run if not already updated in this session
+    const lastUpdate = sessionStorage.getItem('ruta22_last_update');
+    const now = Date.now();
+    
+    // Update if never updated or last update was more than 1 minute ago
+    if (!lastUpdate || now - parseInt(lastUpdate) > 60000) {
+      updateRoute();
+      sessionStorage.setItem('ruta22_last_update', now.toString());
+    }
+  }, []);
 
   const renderActiveView = () => {
     switch (activeTab) {
