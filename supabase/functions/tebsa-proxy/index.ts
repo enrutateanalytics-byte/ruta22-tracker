@@ -38,9 +38,27 @@ serve(async (req) => {
     const data = await response.json();
     console.log(`[TEBSA Proxy] Response:`, data);
 
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    // Transform TEBSA response to expected format
+    if (data.IsValid && data.data && Array.isArray(data.data) && data.data.length > 0) {
+      const unit = data.data[0];
+      return new Response(JSON.stringify({
+        codigo: 1,
+        mensaje: 'Disponible',
+        latitud: unit.latitud,
+        longitud: unit.longitud,
+        velocidad: unit.velocidad || 0,
+        orientacion: unit.orientacion || 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
+      return new Response(JSON.stringify({
+        codigo: 2,
+        mensaje: 'No disponible'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
