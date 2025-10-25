@@ -18,8 +18,8 @@ interface TebsaUnit {
   disponible: boolean;
 }
 
-const TEBSA_API_URL = TEBSA_CONFIG.API_URL;
-const TEBSA_API_KEY = TEBSA_CONFIG.API_KEY;
+// Use Supabase Edge Function as proxy to avoid CORS issues
+const TEBSA_PROXY_URL = "https://pfbkwcuuqowllpnxokxh.supabase.co/functions/v1/tebsa-proxy";
 
 // Enhanced debugging and retry logic
 const MAX_RETRIES = 3;
@@ -36,9 +36,9 @@ export const tebsaApi = {
       throw new Error("TEBSA API key not configured");
     }
 
-    const requestUrl = `${TEBSA_API_URL}?id=${unitId}&apikey=${TEBSA_API_KEY}`;
+    const requestUrl = `${TEBSA_PROXY_URL}?id=${unitId}`;
     
-    console.log(`[TEBSA API] Attempting to fetch data from: ${requestUrl}`);
+    console.log(`[TEBSA API] Attempting to fetch data via proxy for unit: ${unitId}`);
     console.log(`[TEBSA API] Retry attempt: ${retryCount + 1}/${MAX_RETRIES + 1}`);
 
     try {
