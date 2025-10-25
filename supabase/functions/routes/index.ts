@@ -62,16 +62,18 @@ async function getRoutes(supabase: any) {
     .from('routes')
     .select(`
       *,
-      route_stops (
+      stops (
         id,
-        sequence_order,
-        estimated_time,
-        stops (
-          id,
-          name,
-          latitude,
-          longitude
-        )
+        name,
+        latitude,
+        longitude,
+        order_index
+      ),
+      route_points (
+        id,
+        latitude,
+        longitude,
+        order_index
       )
     `)
     .eq('is_active', true)
@@ -84,6 +86,16 @@ async function getRoutes(supabase: any) {
     })
   }
 
+  // Sort stops and points by order_index
+  routes?.forEach((route: any) => {
+    if (route.stops) {
+      route.stops.sort((a: any, b: any) => a.order_index - b.order_index)
+    }
+    if (route.route_points) {
+      route.route_points.sort((a: any, b: any) => a.order_index - b.order_index)
+    }
+  })
+
   return new Response(JSON.stringify(routes), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   })
@@ -94,22 +106,18 @@ async function getRouteDetails(supabase: any, routeId: string) {
     .from('routes')
     .select(`
       *,
-      route_stops (
+      stops (
         id,
-        sequence_order,
-        estimated_time,
-        stops (
-          id,
-          name,
-          latitude,
-          longitude
-        )
+        name,
+        latitude,
+        longitude,
+        order_index
       ),
       route_points (
         id,
         latitude,
         longitude,
-        sequence_order
+        order_index
       )
     `)
     .eq('id', routeId)
@@ -123,12 +131,12 @@ async function getRouteDetails(supabase: any, routeId: string) {
     })
   }
 
-  // Sort stops and points by sequence order
-  if (route.route_stops) {
-    route.route_stops.sort((a: any, b: any) => a.sequence_order - b.sequence_order)
+  // Sort stops and points by order_index
+  if (route.stops) {
+    route.stops.sort((a: any, b: any) => a.order_index - b.order_index)
   }
   if (route.route_points) {
-    route.route_points.sort((a: any, b: any) => a.sequence_order - b.sequence_order)
+    route.route_points.sort((a: any, b: any) => a.order_index - b.order_index)
   }
 
   return new Response(JSON.stringify(route), {
@@ -153,34 +161,19 @@ async function createRoute(supabase: any, req: Request) {
     })
   }
 
-  // Insert stops and create route_stops relationships
+  // Insert stops with route_id
   if (stops && stops.length > 0) {
-    const { data: insertedStops, error: stopsError } = await supabase
+    const stopsWithRoute = stops.map((stop: any) => ({
+      ...stop,
+      route_id: newRoute.id
+    }))
+
+    const { error: stopsError } = await supabase
       .from('stops')
-      .upsert(stops, { onConflict: 'latitude,longitude' })
-      .select()
+      .insert(stopsWithRoute)
 
     if (stopsError) {
       return new Response(JSON.stringify({ error: stopsError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // Create route_stops relationships
-    const routeStops = insertedStops.map((stop: any, index: number) => ({
-      route_id: newRoute.id,
-      stop_id: stop.id,
-      sequence_order: index + 1,
-      estimated_time: stops[index].estimated_time || '5 min'
-    }))
-
-    const { error: routeStopsError } = await supabase
-      .from('route_stops')
-      .insert(routeStops)
-
-    if (routeStopsError) {
-      return new Response(JSON.stringify({ error: routeStopsError.message }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -189,11 +182,9 @@ async function createRoute(supabase: any, req: Request) {
 
   // Insert route points
   if (points && points.length > 0) {
-    const routePoints = points.map((point: any, index: number) => ({
-      route_id: newRoute.id,
-      latitude: point.latitude,
-      longitude: point.longitude,
-      sequence_order: index + 1
+    const routePoints = points.map((point: any) => ({
+      ...point,
+      route_id: newRoute.id
     }))
 
     const { error: pointsError } = await supabase
@@ -229,12 +220,47 @@ async function updateRoute(supabase: any, req: Request, routeId: string) {
     })
   }
 
-  // Delete existing route_stops and route_points
-  await supabase.from('route_stops').delete().eq('route_id', routeId)
+  // Delete existing stops and route_points
+  await supabase.from('stops').delete().eq('route_id', routeId)
   await supabase.from('route_points').delete().eq('route_id', routeId)
 
-  // Re-insert stops and points (similar to create logic)
-  // ... (implement similar logic as in createRoute)
+  // Re-insert stops with route_id
+  if (stops && stops.length > 0) {
+    const stopsWithRoute = stops.map((stop: any) => ({
+      ...stop,
+      route_id: routeId
+    }))
+
+    const { error: stopsError } = await supabase
+      .from('stops')
+      .insert(stopsWithRoute)
+
+    if (stopsError) {
+      return new Response(JSON.stringify({ error: stopsError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // Re-insert route points
+  if (points && points.length > 0) {
+    const routePoints = points.map((point: any) => ({
+      ...point,
+      route_id: routeId
+    }))
+
+    const { error: pointsError } = await supabase
+      .from('route_points')
+      .insert(routePoints)
+
+    if (pointsError) {
+      return new Response(JSON.stringify({ error: pointsError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
