@@ -1,1 +1,4 @@
 project_id = "pfbkwcuuqowllpnxokxh"
+
+[functions.tebsa-proxy]
+verify_jwt = false
