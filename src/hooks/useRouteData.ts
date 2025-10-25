@@ -107,42 +107,43 @@ export const useRouteData = (): UseRouteDataReturn => {
     }
   }, [currentRoute]);
 
-  // Fetch real-time bus locations from TEBSA API (disabled - using simulation)
+  // Fetch real-time bus locations from TEBSA API
   useEffect(() => {
     if (!currentRoute) return;
 
-    // Commented out to use simulation directly
-    /*
     const fetchBusLocations = async () => {
       try {
         setApiError(null);
+        console.log('[useRouteData] Fetching real bus data from TEBSA API...');
         const units = await tebsaApi.getM1R18Units();
-        setBusUnits(units);
-        setIsApiConnected(true);
-        setIsRetrying(false);
-        setLastUpdate(new Date());
-        console.log(`[useRouteData] Successfully fetched ${units.length} units from TEBSA API`);
+        
+        if (units.length > 0) {
+          console.log(`[useRouteData] Successfully fetched ${units.length} units from TEBSA API`);
+          setBusUnits(units);
+          setIsApiConnected(true);
+          setIsRetrying(false);
+          setLastUpdate(new Date());
+        } else {
+          console.warn('[useRouteData] No units available, falling back to simulation');
+          if (simulatedUnits.length > 0) {
+            setBusUnits(simulatedUnits);
+            setIsApiConnected(true);
+            setLastUpdate(new Date());
+          }
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.warn("[useRouteData] TEBSA API not available, using simulation:", errorMessage);
+        console.warn('[useRouteData] TEBSA API error, using simulation:', errorMessage);
         
-        // Check if this is a retry attempt
-        if (errorMessage.includes('after') && errorMessage.includes('attempts')) {
-          setIsRetrying(true);
-          setApiError(`Conexión fallida: ${errorMessage.split(':')[1]?.trim() || errorMessage}`);
-        } else {
-          setApiError(errorMessage);
-        }
-        
+        setApiError(errorMessage);
         setIsApiConnected(false);
         setIsRetrying(false);
         
-        // Switch to simulation mode with 6 units
+        // Fallback to simulation
         if (simulatedUnits.length > 0) {
           setBusUnits(simulatedUnits);
-          setIsApiConnected(true); // Show as connected for UI purposes
+          setIsApiConnected(true);
           setLastUpdate(new Date());
-          console.log(`[useRouteData] Switched to simulation mode with ${simulatedUnits.length} units`);
         }
       }
     };
@@ -154,12 +155,12 @@ export const useRouteData = (): UseRouteDataReturn => {
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
 
     return () => clearInterval(interval);
-    */
   }, [currentRoute, simulatedUnits]);
 
-  // Move simulated units along the route
+  // Move simulated units along the route (only when no real data)
   useEffect(() => {
     if (!simulatedUnits.length || !currentRoute?.points.length) return;
+    if (isApiConnected && busUnits.length > 0 && busUnits !== simulatedUnits) return; // Don't simulate if we have real data
     
     const interval = setInterval(() => {
       setSimulationStep(prev => {

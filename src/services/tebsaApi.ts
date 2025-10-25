@@ -142,9 +142,8 @@ export const tebsaApi = {
    * Get locations for specific M1 R18 route units
    */
   async getM1R18Units(): Promise<TebsaUnit[]> {
-    // For now, try to get all units (id=0)
-    // In the future, we might need specific unit IDs for M1 R18 route
-    return this.getUnitLocation(0);
+    // Use the specific unit ID for Ruta 22
+    return this.getUnitLocation(TEBSA_CONFIG.UNIT_ID);
   }
 };
 
