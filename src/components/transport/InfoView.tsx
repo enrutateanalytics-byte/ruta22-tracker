@@ -67,8 +67,8 @@ export const InfoView = ({ currentRoute }: InfoViewProps) => {
                 <p className="font-semibold">{currentRoute.name}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Descripción</p>
-                <p className="font-semibold">{currentRoute.description || 'Sin descripción'}</p>
+                <p className="text-sm font-medium text-muted-foreground">Tarifa</p>
+                <p className="font-semibold">$16</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Estado</p>
