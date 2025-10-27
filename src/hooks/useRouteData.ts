@@ -28,16 +28,12 @@ export const useRouteData = (): UseRouteDataReturn => {
   const [isLoadingRoutes, setIsLoadingRoutes] = useState(true);
   const [routesError, setRoutesError] = useState<string | null>(null);
   
-  // Bus tracking state
+  // Bus tracking state - ONLY real API data, no simulation
   const [busUnits, setBusUnits] = useState<TebsaUnit[]>([]);
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
-  
-  // Simulation state for 6 bus units
-  const [simulatedUnits, setSimulatedUnits] = useState<TebsaUnit[]>([]);
-  const [simulationStep, setSimulationStep] = useState(0);
 
   // Load routes from Supabase
   useEffect(() => {
@@ -68,44 +64,7 @@ export const useRouteData = (): UseRouteDataReturn => {
     loadRoutes();
   }, []);
 
-  // Initialize simulation units when route changes
-  useEffect(() => {
-    if (currentRoute?.points && currentRoute.points.length > 0) {
-      // Create 6 simulated bus units distributed along the route
-      const createSimulatedUnits = (): TebsaUnit[] => {
-        const totalPoints = currentRoute.points.length;
-        const units: TebsaUnit[] = [];
-        
-        for (let i = 0; i < 6; i++) {
-          // Distribute units along the route with some spacing
-          const pointIndex = Math.floor((i * totalPoints) / 6);
-          const point = currentRoute.points[pointIndex];
-          
-          units.push({
-            id: `unit_${String(i + 1).padStart(3, '0')}`,
-            latitud: point.latitude,
-            longitud: point.longitude,
-            velocidad: 35 + Math.random() * 15, // 35-50 km/h
-            orientacion: Math.floor(Math.random() * 360),
-            disponible: true
-          });
-        }
-        
-        return units;
-      };
-      
-      const newSimulatedUnits = createSimulatedUnits();
-      setSimulatedUnits(newSimulatedUnits);
-      
-      // Set simulation units as active immediately
-      setBusUnits(newSimulatedUnits);
-      setIsApiConnected(true);
-      setLastUpdate(new Date());
-      setSimulationStep(0);
-      
-      console.log(`[useRouteData] Started simulation with ${newSimulatedUnits.length} units`);
-    }
-  }, [currentRoute]);
+  // No simulation - only real API data
 
   // Fetch real-time bus locations from TEBSA API
   useEffect(() => {
@@ -124,27 +83,19 @@ export const useRouteData = (): UseRouteDataReturn => {
           setIsRetrying(false);
           setLastUpdate(new Date());
         } else {
-          console.warn('[useRouteData] No units available, falling back to simulation');
-          if (simulatedUnits.length > 0) {
-            setBusUnits(simulatedUnits);
-            setIsApiConnected(true);
-            setLastUpdate(new Date());
-          }
+          console.warn('[useRouteData] No units available from API');
+          setBusUnits([]);
+          setIsApiConnected(false);
+          setLastUpdate(new Date());
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.warn('[useRouteData] TEBSA API error, using simulation:', errorMessage);
+        console.error('[useRouteData] TEBSA API error:', errorMessage);
         
         setApiError(errorMessage);
         setIsApiConnected(false);
         setIsRetrying(false);
-        
-        // Fallback to simulation
-        if (simulatedUnits.length > 0) {
-          setBusUnits(simulatedUnits);
-          setIsApiConnected(true);
-          setLastUpdate(new Date());
-        }
+        setBusUnits([]);
       }
     };
 
@@ -155,47 +106,7 @@ export const useRouteData = (): UseRouteDataReturn => {
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [currentRoute, simulatedUnits]);
-
-  // Move simulated units along the route (only when no real data)
-  useEffect(() => {
-    if (!simulatedUnits.length || !currentRoute?.points.length) return;
-    if (isApiConnected && busUnits.length > 0 && busUnits !== simulatedUnits) return; // Don't simulate if we have real data
-    
-    const interval = setInterval(() => {
-      setSimulationStep(prev => {
-        const nextStep = (prev + 1) % 100; // Full cycle in 100 steps
-        
-        // Update simulated units positions
-        const updatedUnits = simulatedUnits.map((unit, index) => {
-          const totalPoints = currentRoute.points.length;
-          // Each unit has a different offset to spread them out
-          const baseIndex = Math.floor((index * totalPoints) / 6);
-          const stepOffset = Math.floor((nextStep * totalPoints) / 100);
-          const currentIndex = (baseIndex + stepOffset) % totalPoints;
-          const point = currentRoute.points[currentIndex];
-          
-          return {
-            ...unit,
-            latitud: point.latitude,
-            longitud: point.longitude,
-            velocidad: 35 + Math.random() * 15, // Vary speed slightly
-            orientacion: Math.floor(Math.random() * 360)
-          };
-        });
-        
-        setSimulatedUnits(updatedUnits);
-        
-        // Update busUnits with the new positions
-        setBusUnits(updatedUnits);
-        setLastUpdate(new Date());
-        
-        return nextStep;
-      });
-    }, 3000); // Update every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [simulatedUnits, currentRoute]);
+  }, [currentRoute]);
 
   return {
     // Routes data
