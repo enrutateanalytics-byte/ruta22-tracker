@@ -101,15 +101,19 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
 
         {/* Service Hours */}
         <Card className="p-4 shadow-card-soft bg-gradient-secondary text-white">
-          <h3 className="font-semibold mb-3">Horarios de Servicio</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <h3 className="font-semibold mb-3">Información de Servicio</h3>
+          <div className="space-y-3 text-sm">
             <div>
-              <p className="font-medium mb-1">Lunes a Viernes</p>
-              <p className="opacity-90">05:30 - 22:30</p>
+              <p className="font-medium mb-1">Horario de Servicio</p>
+              <p className="opacity-90">Lunes a Domingo</p>
             </div>
             <div>
-              <p className="font-medium mb-1">Fines de Semana</p>
-              <p className="opacity-90">06:00 - 22:00</p>
+              <p className="font-medium mb-1">Tarifa</p>
+              <p className="opacity-90">$16</p>
+            </div>
+            <div>
+              <p className="font-medium mb-1">Frecuencia de Paso</p>
+              <p className="opacity-90">10 minutos</p>
             </div>
           </div>
         </Card>
