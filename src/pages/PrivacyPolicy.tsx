@@ -20,81 +20,95 @@ const PrivacyPolicy = () => {
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Política de Privacidad
+              Aviso de Privacidad – Ruta 22
             </h1>
             <p className="text-sm text-muted-foreground">
-              Última actualización: {new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+              Última actualización: Octubre 2025
             </p>
           </div>
 
-          <div className="space-y-6 text-foreground">
-            <section>
-              <h2 className="text-xl font-semibold mb-3">1. Información que recopilamos</h2>
+          <div className="space-y-4 text-foreground">
+            <p className="text-muted-foreground leading-relaxed">
+              La aplicación Ruta 22 (en adelante "la App") es una herramienta informativa cuyo objetivo es brindar a los usuarios información sobre el recorrido, paradas y ubicación en tiempo real de las unidades de transporte público correspondientes a la Ruta 22.
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              La protección de sus datos personales es muy importante para nosotros, por lo que este Aviso de Privacidad tiene como finalidad informarle sobre el uso, tratamiento y protección de la información que recopilamos a través de la App.
+            </p>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">1. Responsable del tratamiento de los datos personales</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Nuestra aplicación recopila información de ubicación en tiempo real para proporcionar
-                servicios de seguimiento de transporte público. Esta información incluye:
+                El responsable del tratamiento de sus datos personales es Ruta 22, quien garantiza la confidencialidad y seguridad de la información proporcionada a través de la App.
               </p>
-              <ul className="list-disc list-inside mt-2 text-muted-foreground space-y-1">
-                <li>Ubicación GPS del dispositivo (solo mientras se usa la aplicación)</li>
-                <li>Datos de uso de la aplicación</li>
-                <li>Información técnica del dispositivo</li>
+              <p className="text-muted-foreground leading-relaxed">
+                Puede contactarnos al correo electrónico: <span className="font-medium text-foreground">contacto@ruta22.app</span>
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">2. Datos personales que se recaban</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                La App no solicita ni almacena información personal sensible de los usuarios.
+                Sin embargo, con el fin de mejorar la experiencia y funcionalidad del servicio, puede recopilar la siguiente información:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
+                <li>Datos de ubicación (geolocalización), únicamente si el usuario otorga su consentimiento.</li>
+                <li>Información técnica del dispositivo (versión del sistema operativo, modelo del teléfono, idioma y zona horaria).</li>
               </ul>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">2. Uso de la información</h2>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">3. Finalidad del tratamiento de la información</h2>
               <p className="text-muted-foreground leading-relaxed">
-                La información recopilada se utiliza exclusivamente para:
+                Los datos recabados son utilizados exclusivamente para:
               </p>
-              <ul className="list-disc list-inside mt-2 text-muted-foreground space-y-1">
-                <li>Mostrar tu ubicación en el mapa</li>
-                <li>Calcular distancias a paradas de autobús</li>
-                <li>Proporcionar información de rutas cercanas</li>
-                <li>Mejorar la experiencia del usuario</li>
+              <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
+                <li>Mostrar en el mapa la ubicación del usuario y de las unidades en tiempo real.</li>
+                <li>Optimizar el funcionamiento de la App y mejorar su desempeño.</li>
+                <li>Analizar de forma anónima el uso de la aplicación para fines estadísticos y de mejora del servicio.</li>
               </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold mb-3">3. Compartir información</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                No compartimos, vendemos ni alquilamos tu información personal a terceros.
-                Los datos de ubicación se procesan localmente en tu dispositivo y no se almacenan
-                en servidores externos.
+              <p className="text-muted-foreground leading-relaxed mt-3">
+                En ningún caso los datos son utilizados con fines comerciales, publicitarios o distintos a los mencionados.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">4. Seguridad</h2>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">4. Transferencia de datos</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Implementamos medidas de seguridad para proteger tu información. Sin embargo,
-                ningún método de transmisión por Internet o almacenamiento electrónico es
-                100% seguro.
+                Ruta 22 no comparte, vende ni transfiere información personal a terceros.
+                Solo podrá compartir información técnica o anónima cuando sea necesario para el funcionamiento de la App (por ejemplo, con proveedores de servicios de mapas o servidores), quienes están obligados a cumplir con las políticas de privacidad correspondientes.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">5. Permisos de ubicación</h2>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">5. Derechos del usuario (ARCO)</h2>
               <p className="text-muted-foreground leading-relaxed">
-                La aplicación solicita permisos de ubicación únicamente para mostrar tu posición
-                en el mapa. Puedes revocar estos permisos en cualquier momento desde la
-                configuración de tu dispositivo.
+                El usuario tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos personales.
+                Para ejercer estos derechos puede enviar una solicitud al correo: <span className="font-medium text-foreground">contacto@ruta22.app</span>, indicando su nombre y la descripción del derecho que desea ejercer.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">6. Cambios a esta política</h2>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">6. Uso de cookies y tecnologías similares</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Nos reservamos el derecho de actualizar esta política de privacidad en cualquier
-                momento. Te notificaremos sobre cambios significativos mediante la aplicación
-                o por correo electrónico.
+                La App puede utilizar herramientas de análisis que recopilan información anónima sobre el uso de la aplicación (por ejemplo, Google Analytics for Firebase).
+                Estos datos se emplean únicamente con fines estadísticos y no permiten identificar personalmente al usuario.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">7. Contacto</h2>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">7. Cambios al aviso de privacidad</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Si tienes preguntas sobre esta Política de Privacidad, puedes contactarnos a
-                través de los canales oficiales de TEBSA.
+                Ruta 22 se reserva el derecho de modificar este Aviso de Privacidad en cualquier momento.
+                Cualquier cambio será publicado dentro de la aplicación y en su sitio web, en caso de existir.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">8. Aceptación del aviso</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Al usar la App, el usuario acepta los términos y condiciones establecidos en este Aviso de Privacidad.
+                Si el usuario no está de acuerdo con los términos, deberá desinstalar la aplicación y dejar de utilizar el servicio.
               </p>
             </section>
           </div>
