@@ -85,13 +85,6 @@ const Index = () => {
 
       {/* Tab Bar */}
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      {/* Footer */}
-      <footer className="bg-muted/30 border-t px-4 py-2 text-center text-xs text-muted-foreground">
-        <Link to="/privacy-policy" className="hover:text-foreground hover:underline">
-          Política de Privacidad
-        </Link>
-      </footer>
     </div>
   );
 };
