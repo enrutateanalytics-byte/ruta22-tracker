@@ -1,4 +1,5 @@
-import { Phone, Mail, MapPin, Clock, Info as InfoIcon, Users, Bus, Navigation } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Info as InfoIcon, Users, Bus, Navigation, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { type CompleteRoute } from "@/services/routeService";
@@ -167,6 +168,16 @@ export const InfoView = ({ currentRoute }: InfoViewProps) => {
               <p className="text-xs font-medium">Pago Digital</p>
             </div>
           </div>
+        </Card>
+
+        {/* Privacy Policy */}
+        <Card className="p-4 shadow-card-soft">
+          <Link to="/privacy-policy">
+            <Button variant="outline" className="w-full flex items-center justify-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Política de Privacidad</span>
+            </Button>
+          </Link>
         </Card>
 
       </div>
