@@ -24,8 +24,8 @@ export const BusMarker = ({ position }: BusMarkerProps) => {
         <div className="absolute inset-0 bg-black/20 rounded-full blur-sm transform translate-y-1"></div>
         
         {/* Bus icon */}
-        <div className="relative w-[55px] h-[55px] bg-secondary rounded-xl shadow-transport flex items-center justify-center border-2 border-white">
-          <Bus size={23} className="text-white" />
+        <div className="relative w-[66px] h-[66px] bg-secondary rounded-xl shadow-transport flex items-center justify-center border-2 border-white">
+          <Bus size={28} className="text-white" />
         </div>
         
         {/* Pulse animation */}
