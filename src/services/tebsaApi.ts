@@ -139,11 +139,28 @@ export const tebsaApi = {
   },
 
   /**
-   * Get locations for specific M1 R18 route units
+   * Get locations for specific M1 R18 route units (multiple units)
    */
   async getM1R18Units(): Promise<TebsaUnit[]> {
-    // Use the specific unit ID for Ruta 22
-    return this.getUnitLocation(TEBSA_CONFIG.UNIT_ID);
+    console.log(`[TEBSA API] Fetching locations for ${TEBSA_CONFIG.UNIT_IDS.length} units`);
+    
+    // Fetch all units in parallel for better performance
+    const unitPromises = TEBSA_CONFIG.UNIT_IDS.map(async (unitId) => {
+      try {
+        return await this.getUnitLocation(unitId);
+      } catch (error) {
+        console.error(`[TEBSA API] Failed to fetch unit ${unitId}:`, error);
+        // Return empty array for failed units so other units can still be displayed
+        return [];
+      }
+    });
+
+    // Wait for all promises and flatten the results
+    const results = await Promise.all(unitPromises);
+    const allUnits = results.flat();
+    
+    console.log(`[TEBSA API] Successfully fetched ${allUnits.length} available units`);
+    return allUnits;
   }
 };
 
