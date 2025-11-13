@@ -11,6 +11,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -23,7 +24,7 @@ const Auth = () => {
     });
   }, [navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -38,24 +39,53 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.session) {
-        toast({
-          title: "Bienvenido",
-          description: "Inicio de sesión exitoso",
+      if (isSignUp) {
+        // Sign up
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+          },
         });
-        navigate("/admin");
+
+        if (error) throw error;
+
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Revisa tu email para confirmar tu cuenta (o inicia sesión directamente si la confirmación está deshabilitada)",
+        });
+        
+        // Try to sign in immediately (works if email confirmation is disabled)
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (!signInError && data.session) {
+          navigate("/admin");
+        }
+      } else {
+        // Sign in
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data.session) {
+          toast({
+            title: "Bienvenido",
+            description: "Inicio de sesión exitoso",
+          });
+          navigate("/admin");
+        }
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Error al iniciar sesión",
+        description: error.message || (isSignUp ? "Error al crear cuenta" : "Error al iniciar sesión"),
         variant: "destructive",
       });
     } finally {
@@ -72,13 +102,18 @@ const Auth = () => {
               <Lock className="h-6 w-6 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            {isSignUp ? "Crear Cuenta" : "Admin Login"}
+          </CardTitle>
           <CardDescription className="text-center">
-            Ingresa tus credenciales para acceder al panel de administración
+            {isSignUp 
+              ? "Crea una nueva cuenta de administrador"
+              : "Ingresa tus credenciales para acceder al panel de administración"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
                 Email
@@ -106,9 +141,26 @@ const Auth = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              {loading 
+                ? (isSignUp ? "Creando cuenta..." : "Iniciando sesión...") 
+                : (isSignUp ? "Crear Cuenta" : "Iniciar Sesión")
+              }
             </Button>
           </form>
+          
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-primary hover:underline"
+              disabled={loading}
+            >
+              {isSignUp 
+                ? "¿Ya tienes cuenta? Inicia sesión" 
+                : "¿No tienes cuenta? Regístrate"
+              }
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
