@@ -19,6 +19,8 @@ const AdminIndex = () => {
   useEffect(() => {
     // Always connected since we're using the integrated Supabase client
     setIsSupabaseConnected(true)
+    
+    // Remove auth redirect since admin is now public
   }, [])
 
   const handleUpdateRuta22 = async () => {
