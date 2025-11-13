@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Route, ArrowLeft, AlertTriangle, Upload, RefreshCw } from 'lucide-react'
+import { Route, ArrowLeft, AlertTriangle, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
-import { updateRuta22WithKMLData } from '@/utils/updateRuta22'
-import { updateRuta22WithNewKML } from '@/utils/updateNewRuta22'
+
+
 import { toast } from 'sonner'
 
 const AdminIndex = () => {
@@ -23,23 +23,6 @@ const AdminIndex = () => {
     // Remove auth redirect since admin is now public
   }, [])
 
-  const handleUpdateRuta22 = async () => {
-    console.log("🔄 Starting Ruta 22 update process...")
-    setIsUpdatingRuta22(true)
-    try {
-      toast.info("Actualizando Ruta 22 con datos del KML...")
-      console.log("📞 Calling updateRuta22WithKMLData...")
-      await updateRuta22WithKMLData()
-      console.log("✅ Update completed successfully!")
-      toast.success("¡Ruta 22 actualizada exitosamente!")
-    } catch (error) {
-      console.error("❌ Error updating Ruta 22:", error)
-      toast.error("Error al actualizar la Ruta 22")
-    } finally {
-      console.log("🏁 Update process finished, resetting state...")
-      setIsUpdatingRuta22(false)
-    }
-  }
 
   const handleUpdateWithNewKML = async () => {
     console.log("🔄 Starting Ruta 22 update with NEW KML...")
@@ -189,14 +172,6 @@ const AdminIndex = () => {
                 >
                   <Route className="h-4 w-4 mr-2" />
                   Gestionar Rutas
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleUpdateRuta22}
-                  disabled={!isSupabaseConnected || isUpdatingRuta22}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isUpdatingRuta22 ? "Actualizando..." : "Actualizar Ruta 22"}
                 </Button>
                 <Button 
                   variant="secondary" 
