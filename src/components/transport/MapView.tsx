@@ -240,12 +240,6 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-secondary rounded-full"></div>
-              <span className="text-sm text-muted-foreground">
-                Tiempo estimado: <span className="font-medium text-secondary">5 min</span>
-              </span>
-            </div>
           </div>
         </div>
       )}

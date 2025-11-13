@@ -18,21 +18,11 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
     );
   }
 
-  // Generate mock schedule data based on route stops
-  const schedules = currentRoute.stops.map((stop, index) => {
-    const baseTime = new Date();
-    baseTime.setHours(5, 20 + (index * 10), 0, 0); // Start at 5:20 AM, add 10 min per stop
-    
-    return {
-      time: baseTime.toLocaleTimeString('es-MX', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      }),
-      stop: stop.name,
-      status: index < 3 ? "completed" : index === 3 ? "current" : "upcoming"
-    };
-  });
+  // List of stops without schedule times
+  const stops = currentRoute.stops.map((stop, index) => ({
+    stop: stop.name,
+    status: index < 3 ? "completed" : index === 3 ? "current" : "upcoming"
+  }));
 
   return (
     <div className="flex flex-col h-full bg-gradient-map">
@@ -60,7 +50,7 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
           </div>
           
           <div className="space-y-3">
-            {schedules.map((item, index) => (
+            {stops.map((item, index) => (
               <div key={index} className="flex items-center space-x-4">
                 <div className="flex flex-col items-center">
                   <div className={`w-4 h-4 rounded-full border-2 ${
@@ -70,7 +60,7 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
                       ? 'bg-secondary border-secondary animate-pulse'
                       : 'bg-transparent border-muted-foreground/30'
                   }`} />
-                  {index < schedules.length - 1 && (
+                  {index < stops.length - 1 && (
                     <div className={`w-0.5 h-6 mt-1 ${
                       item.status === 'completed' ? 'bg-primary' : 'bg-muted-foreground/20'
                     }`} />
@@ -78,14 +68,11 @@ export const ScheduleView = ({ currentRoute }: ScheduleViewProps) => {
                 </div>
                 
                 <div className="flex-1 flex items-center justify-between py-1">
-                  <div>
-                    <p className={`font-medium ${
-                      item.status === 'current' ? 'text-secondary' : 'text-foreground'
-                    }`}>
-                      {item.stop}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{item.time}</p>
-                  </div>
+                  <p className={`font-medium ${
+                    item.status === 'current' ? 'text-secondary' : 'text-foreground'
+                  }`}>
+                    {item.stop}
+                  </p>
                   
                   {item.status === 'current' && (
                     <div className="flex items-center space-x-2 text-secondary">
