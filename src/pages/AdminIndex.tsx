@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Route, ArrowLeft, AlertTriangle, Upload } from 'lucide-react'
+import { Route, ArrowLeft, AlertTriangle, Upload, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { updateRuta22WithKMLData } from '@/utils/updateRuta22'
+import { updateRuta22WithNewKML } from '@/utils/updateNewRuta22'
 import { toast } from 'sonner'
 
 const AdminIndex = () => {
@@ -34,6 +35,23 @@ const AdminIndex = () => {
       toast.error("Error al actualizar la Ruta 22")
     } finally {
       console.log("🏁 Update process finished, resetting state...")
+      setIsUpdatingRuta22(false)
+    }
+  }
+
+  const handleUpdateWithNewKML = async () => {
+    console.log("🔄 Starting Ruta 22 update with NEW KML...")
+    setIsUpdatingRuta22(true)
+    try {
+      toast.info("Actualizando Ruta 22 con nuevo KML (Ley Ojo de Agua - Macro Plaza)...")
+      await updateRuta22WithNewKML()
+      toast.success("¡Ruta 22 actualizada exitosamente con el nuevo KML!")
+      // Refresh the page to show new data
+      setTimeout(() => window.location.reload(), 1500)
+    } catch (error) {
+      console.error("❌ Error updating Ruta 22 with new KML:", error)
+      toast.error("Error al actualizar la Ruta 22: " + (error as Error).message)
+    } finally {
       setIsUpdatingRuta22(false)
     }
   }
@@ -160,6 +178,14 @@ const AdminIndex = () => {
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {isUpdatingRuta22 ? "Actualizando..." : "Actualizar Ruta 22"}
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleUpdateWithNewKML}
+                  disabled={!isSupabaseConnected || isUpdatingRuta22}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {isUpdatingRuta22 ? "Actualizando..." : "Actualizar con Nuevo KML"}
                 </Button>
                 <Button variant="outline" disabled>
                   Exportar Datos
