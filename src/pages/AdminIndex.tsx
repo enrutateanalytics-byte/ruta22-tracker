@@ -46,8 +46,25 @@ const AdminIndex = () => {
     setIsUpdatingRuta22(true)
     try {
       toast.info("Actualizando Ruta 22 con nuevo KML (Ley Ojo de Agua - Macro Plaza)...")
-      await updateRuta22WithNewKML()
-      toast.success("¡Ruta 22 actualizada exitosamente con el nuevo KML!")
+      
+      // Call the edge function to update the route
+      const { data, error } = await supabase.functions.invoke('update-ruta22', {
+        method: 'POST'
+      })
+
+      if (error) {
+        console.error("❌ Edge function error:", error)
+        throw new Error(error.message || 'Error al llamar a la función de actualización')
+      }
+
+      if (!data.success) {
+        console.error("❌ Update failed:", data.error)
+        throw new Error(data.error || 'Error al actualizar la ruta')
+      }
+
+      console.log("✅ Update successful:", data)
+      toast.success(`¡Ruta 22 actualizada! ${data.points} puntos y ${data.stops} paradas`)
+      
       // Refresh the page to show new data
       setTimeout(() => window.location.reload(), 1500)
     } catch (error) {
