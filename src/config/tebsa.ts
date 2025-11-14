@@ -3,7 +3,6 @@ export const TEBSA_CONFIG = {
   API_URL: "https://wstijuana45da56.nrtec-sys.com/tebsa/getUbicacion",
   API_KEY: "6eiWLiJI3l0vWOSKPq", // TEBSA API key configured
   UNIT_IDS: [
-    38104504,  // Unidad original
     53502533,  // Unidad GPS activa
     51301501,  // Unidad GPS activa
     62704513,  // Unidad GPS activa
