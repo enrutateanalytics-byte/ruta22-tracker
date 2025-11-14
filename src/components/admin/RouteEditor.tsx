@@ -81,6 +81,17 @@ export const RouteEditor = ({ route, onSave, onCancel }: RouteEditorProps) => {
     }
   }
 
+  const handleRemovePoint = (index: number) => {
+    setPoints(points.filter((_, i) => i !== index))
+  }
+
+  const handleClearAllPoints = () => {
+    if (points.length === 0) return
+    if (confirm('¿Estás seguro de que quieres borrar todos los puntos de la ruta?')) {
+      setPoints([])
+    }
+  }
+
   const handleSave = async () => {
     if (!routeData.name.trim()) {
       toast({
@@ -254,10 +265,24 @@ export const RouteEditor = ({ route, onSave, onCancel }: RouteEditorProps) => {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Mapa Interactivo</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Haz clic en el mapa para agregar puntos de ruta. Puntos: {points.length}
-              </p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>Mapa Interactivo</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Haz clic en el mapa para agregar puntos. Haz clic en un punto para eliminarlo. Puntos: {points.length}
+                  </p>
+                </div>
+                {points.length > 0 && (
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    onClick={handleClearAllPoints}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Limpiar puntos
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-96 rounded-lg overflow-hidden">
@@ -267,6 +292,15 @@ export const RouteEditor = ({ route, onSave, onCancel }: RouteEditorProps) => {
                   {points.length > 0 && (
                     <RoutePolyline points={points} color={routeData.color || '#10b981'} />
                   )}
+                  {/* Render clickable point markers */}
+                  {points.map((point, index) => (
+                    <PointMarker
+                      key={`point-${index}`}
+                      point={point}
+                      index={index}
+                      onRemove={handleRemovePoint}
+                    />
+                  ))}
                   {/* Render stop markers */}
                   {stops.map((stop, index) => (
                     <StopMarker
@@ -324,6 +358,42 @@ const RoutePolyline = ({ points, color }: { points: RoutePointData[], color: str
       polyline.setMap(null)
     }
   }, [points, color])
+
+  return null
+}
+
+const PointMarker = ({ point, index, onRemove }: { point: RoutePointData, index: number, onRemove: (index: number) => void }) => {
+  useEffect(() => {
+    const mapElement = document.querySelector('[data-map]') as any
+    if (!mapElement?.mapInstance || !(window as any).google) return
+
+    const map = mapElement.mapInstance
+    const marker = new (window as any).google.maps.Marker({
+      position: { lat: point.latitude, lng: point.longitude },
+      map: map,
+      icon: {
+        path: (window as any).google.maps.SymbolPath.CIRCLE,
+        fillColor: '#ef4444',
+        fillOpacity: 0.8,
+        strokeColor: 'white',
+        strokeWeight: 2,
+        scale: 6
+      },
+      title: `Punto ${index + 1} - Clic para eliminar`,
+      cursor: 'pointer'
+    })
+
+    const listener = marker.addListener('click', () => {
+      onRemove(index)
+    })
+
+    return () => {
+      if ((window as any).google?.maps?.event?.removeListener) {
+        (window as any).google.maps.event.removeListener(listener)
+      }
+      marker.setMap(null)
+    }
+  }, [point, index, onRemove])
 
   return null
 }
