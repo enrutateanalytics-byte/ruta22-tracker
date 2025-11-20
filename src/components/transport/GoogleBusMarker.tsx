@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import busIcon from "@/assets/icono_autobus_nuevo.png";
+import busIcon from "@/assets/autobus_circular.png";
 
 interface GoogleBusMarkerProps {
   position: { lat: number; lng: number };
