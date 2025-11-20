@@ -18,12 +18,12 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
 
     const map = mapElement.mapInstance;
 
-    // Create custom bus icon using the uploaded icon (50% larger)
+    // Create custom bus icon using the uploaded icon (80% larger total)
     const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
     const busIconConfig = {
       url: busIcon,
-      scaledSize: new (window as any).google.maps.Size(33.12 * scale, 33.12 * scale),
-      anchor: new (window as any).google.maps.Point(16.56 * scale, 16.56 * scale),
+      scaledSize: new (window as any).google.maps.Size(39.744 * scale, 39.744 * scale),
+      anchor: new (window as any).google.maps.Point(19.872 * scale, 19.872 * scale),
     };
 
     // Create info window content
@@ -85,8 +85,8 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
       const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
       const updatedIcon = {
         url: busIcon,
-        scaledSize: new (window as any).google.maps.Size(33.12 * scale, 33.12 * scale),
-        anchor: new (window as any).google.maps.Point(16.56 * scale, 16.56 * scale),
+        scaledSize: new (window as any).google.maps.Size(39.744 * scale, 39.744 * scale),
+        anchor: new (window as any).google.maps.Point(19.872 * scale, 19.872 * scale),
       };
       marker.setIcon(updatedIcon);
     }
