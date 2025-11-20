@@ -2,8 +2,8 @@ import { routeService } from '@/services/routeService';
 
 export async function importRealKMLRoute(): Promise<void> {
   try {
-    console.log('Fetching KML file from /route-data-real.kml');
-    const response = await fetch('/route-data-real.kml');
+    console.log('Fetching KML file from /ruta-22-updated.kml');
+    const response = await fetch('/ruta-22-updated.kml');
     
     if (!response.ok) {
       throw new Error(`Failed to fetch KML file: ${response.status}`);
