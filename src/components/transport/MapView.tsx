@@ -165,8 +165,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         )}
         
-        {/* Paradas */}
-        {currentRoute.stops.map((stop) => (
+        {/* Paradas - Comentado por solicitud del usuario */}
+        {/* {currentRoute.stops.map((stop) => (
           <GoogleStopMarker
             key={stop.id}
             stop={{
@@ -179,7 +179,7 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
             isSelected={selectedStop?.id === stop.id}
             onClick={() => setSelectedStop(selectedStop?.id === stop.id ? null : stop)}
           />
-        ))}
+        ))} */}
         
         {/* Autobuses en tiempo real */}
         {busUnits.length > 0 ? (
