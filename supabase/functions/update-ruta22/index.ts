@@ -180,10 +180,11 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error updating Ruta 22:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error al actualizar la Ruta 22';
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Error al actualizar la Ruta 22'
+        error: errorMessage
       }),
       {
         status: 500,

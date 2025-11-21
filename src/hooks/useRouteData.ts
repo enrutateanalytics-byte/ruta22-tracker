@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { routeService, type CompleteRoute } from '@/services/routeService';
 import { tebsaApi, type TebsaUnit } from '@/services/tebsaApi';
+import { gpsUnitsService } from '@/services/gpsUnitsService';
 import { TEBSA_CONFIG } from '@/config/tebsa';
 
 interface UseRouteDataReturn {
@@ -74,11 +75,22 @@ export const useRouteData = (): UseRouteDataReturn => {
       try {
         setApiError(null);
         console.log('[useRouteData] Fetching real bus data from TEBSA API...');
-        const units = await tebsaApi.getM1R18Units();
         
-        if (units.length > 0) {
-          console.log(`[useRouteData] Successfully fetched ${units.length} units from TEBSA API`);
-          setBusUnits(units);
+        // Get units from TEBSA API and economic numbers from database
+        const [units, economicNumberMap] = await Promise.all([
+          tebsaApi.getM1R18Units(),
+          gpsUnitsService.getImeiToEconomicNumberMap()
+        ]);
+        
+        // Enrich units with economic numbers
+        const enrichedUnits = units.map(unit => ({
+          ...unit,
+          economicNumber: economicNumberMap.get(parseInt(unit.id)) || undefined
+        }));
+        
+        if (enrichedUnits.length > 0) {
+          console.log(`[useRouteData] Successfully fetched ${enrichedUnits.length} units from TEBSA API`);
+          setBusUnits(enrichedUnits);
           setIsApiConnected(true);
           setIsRetrying(false);
           setLastUpdate(new Date());

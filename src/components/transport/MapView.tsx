@@ -190,6 +190,7 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
               velocity={unit.velocidad}
               orientation={unit.orientacion}
               unitId={unit.id}
+              economicNumber={unit.economicNumber}
             />
           ))
         ) : (
