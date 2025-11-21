@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      gps_units: {
+        Row: {
+          created_at: string
+          description: string | null
+          economic_number: string
+          id: string
+          imei: number
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          economic_number: string
+          id?: string
+          imei: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          economic_number?: string
+          id?: string
+          imei?: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       route_points: {
         Row: {
           created_at: string

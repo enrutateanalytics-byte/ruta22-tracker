@@ -16,6 +16,7 @@ interface TebsaUnit {
   velocidad: number;
   orientacion: number;
   disponible: boolean;
+  economicNumber?: string; // Economic number of the unit
 }
 
 // Use Supabase Edge Function as proxy to avoid CORS issues

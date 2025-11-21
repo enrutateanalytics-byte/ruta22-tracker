@@ -6,9 +6,10 @@ interface GoogleBusMarkerProps {
   velocity?: number;
   orientation?: number;
   unitId?: string;
+  economicNumber?: string;
 }
 
-export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitId }: GoogleBusMarkerProps) => {
+export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitId, economicNumber }: GoogleBusMarkerProps) => {
   const [marker, setMarker] = useState<any>(null);
 
   useEffect(() => {
@@ -28,12 +29,18 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
 
     // Create info window content
     const infoContent = `
-      <div style="padding: 12px; font-family: Arial, sans-serif; min-width: 200px;">
+      <div style="padding: 12px; font-family: Arial, sans-serif; min-width: 220px;">
         <div style="display: flex; align-items: center; margin-bottom: 8px;">
           <div style="color: hsl(15 98% 16%); font-weight: bold; font-size: 16px;">
-            ${unitId ? `Unidad ${unitId}` : 'M1 R18 - Autobús'}
+            ${economicNumber ? `Unidad #${economicNumber}` : (unitId ? `Unidad ${unitId}` : 'M1 R18 - Autobús')}
           </div>
         </div>
+        ${unitId ? `
+        <div style="display: flex; justify-content: space-between; margin: 4px 0; padding-bottom: 6px; border-bottom: 1px solid #eee;">
+          <span style="font-size: 12px; color: #999;">IMEI:</span>
+          <span style="font-size: 12px; font-weight: 500; color: #666;">${unitId}</span>
+        </div>
+        ` : ''}
         <div style="display: flex; justify-content: space-between; margin: 4px 0;">
           <span style="font-size: 13px; color: #666;">Velocidad:</span>
           <span style="font-size: 13px; font-weight: bold; color: hsl(15 98% 16%);">${Math.round(velocity)} km/h</span>
@@ -50,7 +57,7 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
     const newMarker = new (window as any).google.maps.Marker({
       position: position,
       map: map,
-      title: unitId ? `Unidad ${unitId}` : "M1 R18 - Autobús",
+      title: economicNumber ? `Unidad #${economicNumber}` : (unitId ? `Unidad ${unitId}` : "M1 R18 - Autobús"),
       icon: busIconConfig,
       zIndex: 1000,
     });
