@@ -12,6 +12,8 @@ export const TEBSA_CONFIG = {
     5305593,   // Unidad GPS activa
     98003544,  // Unidad GPS activa
     64003519,  // Unidad GPS activa
+    24704594,  // Unidad GPS activa
+    6204526,   // Unidad GPS activa
   ],
   POLLING_INTERVAL: 30000, // 30 seconds
   FALLBACK_TO_SIMULATION: true, // Enable simulation when API is not available
