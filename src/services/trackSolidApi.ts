@@ -29,31 +29,34 @@ export const trackSolidApi = {
     try {
       console.log(`[TrackSolid API] Fetching location for IMEI: ${imei}`);
 
-      const { data, error } = await supabase.functions.invoke('tracksolid-proxy', {
+      const url = `https://pfbkwcuuqowllpnxokxh.supabase.co/functions/v1/tracksolid-proxy?imei=${imei}`;
+      
+      const response = await fetch(url, {
         method: 'GET',
-        // @ts-ignore - Supabase types don't include query params properly
-        query: { imei: imei.toString() }
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmYmt3Y3V1cW93bGxwbnhva3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NTU4NDcsImV4cCI6MjA3NDUzMTg0N30.SAL7nBlINRqBvn6wc5V8WT81ID_Y4PIPMHdbZaJJgPQ'
+        }
       });
 
-      if (error) {
-        throw new Error(`[TrackSolid API] Error: ${error.message}`);
+      if (!response.ok) {
+        throw new Error(`Edge Function returned a non-2xx status code`);
       }
 
-      const response = data as TrackSolidApiResponse;
+      const data = await response.json() as TrackSolidApiResponse;
 
       // Transform response to unit format
-      if (response.codigo === 1 && response.mensaje === "Disponible") {
+      if (data.codigo === 1 && data.mensaje === "Disponible") {
         return [{
           id: imei,
-          lat: response.latitud,
-          lng: response.longitud,
-          speed: response.velocidad,
-          orientation: response.orientacion,
+          lat: data.latitud,
+          lng: data.longitud,
+          speed: data.velocidad,
+          orientation: data.orientacion,
           available: true,
         }];
       }
 
-      console.log(`[TrackSolid API] Unit ${imei} not available: ${response.mensaje}`);
+      console.log(`[TrackSolid API] Unit ${imei} not available: ${data.mensaje}`);
       return [];
 
     } catch (error) {
