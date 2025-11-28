@@ -18,8 +18,8 @@ export interface TrackSolidApiResponse {
   orientacion: number;
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const MAX_RETRIES = 1; // Reduced to avoid overwhelming TrackSolid
+const RETRY_DELAY = 2000; // 2 seconds
 
 export const trackSolidApi = {
   /**
@@ -74,25 +74,29 @@ export const trackSolidApi = {
   },
 
   /**
-   * Fetch location data for multiple units concurrently
+   * Fetch location data for multiple units with significant delays to avoid rate limiting
    */
   async getMultipleUnitsLocation(imeis: number[]): Promise<TrackSolidUnit[]> {
-    console.log(`[TrackSolid API] Fetching locations for ${imeis.length} units`);
+    console.log(`[TrackSolid API] Fetching locations for ${imeis.length} units (sequential with 1.5s delays)`);
 
-    // Add staggered delays to avoid rate limiting (100ms between each request)
-    const promises = imeis.map((imei, index) => 
-      new Promise<TrackSolidUnit[]>(resolve => 
-        setTimeout(
-          () => this.getUnitLocation(imei).then(resolve),
-          index * 100 // 100ms delay between each request
-        )
-      )
-    );
+    const availableUnits: TrackSolidUnit[] = [];
     
-    const results = await Promise.all(promises);
-
-    // Flatten and filter available units
-    const availableUnits = results.flat().filter(unit => unit.available);
+    // Process units sequentially with 1.5 second delay between each
+    for (let i = 0; i < imeis.length; i++) {
+      const imei = imeis[i];
+      
+      try {
+        const units = await this.getUnitLocation(imei);
+        availableUnits.push(...units.filter(unit => unit.available));
+      } catch (error) {
+        console.error(`[TrackSolid API] Failed to fetch unit ${imei}:`, error);
+      }
+      
+      // Wait 1.5 seconds before next request (except for last one)
+      if (i < imeis.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
     
     console.log(`[TrackSolid API] ${availableUnits.length} of ${imeis.length} units available`);
     
