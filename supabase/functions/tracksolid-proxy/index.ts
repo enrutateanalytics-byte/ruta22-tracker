@@ -8,8 +8,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Global token cache
+// Global token cache - cache for 1 hour (3600 seconds)
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+
+// Location cache to reduce API calls - cache for 45 seconds
+const locationCache = new Map<string, { data: any; expiresAt: number }>();
 
 /**
  * Generate MD5 signature for TrackSolid API
@@ -134,6 +137,17 @@ async function getDeviceLocation(
   appKey: string,
   appSecret: string
 ): Promise<any> {
+  // Check location cache first
+  const cacheKey = `location_${imei}`;
+  const cached = locationCache.get(cacheKey);
+  
+  if (cached && Date.now() < cached.expiresAt) {
+    console.log(`[TrackSolid Proxy] Using cached location for IMEI: ${imei}`);
+    return cached.data;
+  }
+
+  console.log(`[TrackSolid Proxy] Fetching fresh location for IMEI: ${imei}`);
+  
   const params = {
     method: "jimi.device.location.get",
     timestamp: getTimestamp(),
@@ -174,6 +188,12 @@ async function getDeviceLocation(
     }
     throw new Error(`TrackSolid location error: ${data.message}`);
   }
+
+  // Cache the location result for 45 seconds
+  locationCache.set(cacheKey, {
+    data: data.result,
+    expiresAt: Date.now() + 45000 // 45 seconds
+  });
 
   return data.result;
 }
