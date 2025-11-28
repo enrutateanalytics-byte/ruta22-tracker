@@ -79,7 +79,16 @@ export const trackSolidApi = {
   async getMultipleUnitsLocation(imeis: number[]): Promise<TrackSolidUnit[]> {
     console.log(`[TrackSolid API] Fetching locations for ${imeis.length} units`);
 
-    const promises = imeis.map(imei => this.getUnitLocation(imei));
+    // Add staggered delays to avoid rate limiting (100ms between each request)
+    const promises = imeis.map((imei, index) => 
+      new Promise<TrackSolidUnit[]>(resolve => 
+        setTimeout(
+          () => this.getUnitLocation(imei).then(resolve),
+          index * 100 // 100ms delay between each request
+        )
+      )
+    );
+    
     const results = await Promise.all(promises);
 
     // Flatten and filter available units
