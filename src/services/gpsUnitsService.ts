@@ -5,6 +5,7 @@ export interface GpsUnitDetails {
   economic_number: string;
   description?: string;
   is_active: boolean;
+  provider: 'tebsa' | 'tracksolid';
 }
 
 export const gpsUnitsService = {
@@ -22,7 +23,10 @@ export const gpsUnitsService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(unit => ({
+      ...unit,
+      provider: unit.provider as 'tebsa' | 'tracksolid'
+    }));
   },
 
   /**
@@ -41,7 +45,10 @@ export const gpsUnitsService = {
       return null;
     }
 
-    return data;
+    return data ? {
+      ...data,
+      provider: data.provider as 'tebsa' | 'tracksolid'
+    } : null;
   },
 
   /**
@@ -56,5 +63,26 @@ export const gpsUnitsService = {
     });
 
     return map;
+  },
+
+  /**
+   * Get units by provider
+   */
+  async getUnitsByProvider(provider: 'tebsa' | 'tracksolid'): Promise<GpsUnitDetails[]> {
+    const { data, error } = await supabase
+      .from('gps_units')
+      .select('*')
+      .eq('is_active', true)
+      .eq('provider', provider);
+
+    if (error) {
+      console.error(`[GPS Units Service] Error fetching ${provider} units:`, error);
+      throw error;
+    }
+
+    return (data || []).map(unit => ({
+      ...unit,
+      provider: unit.provider as 'tebsa' | 'tracksolid'
+    }));
   }
 };
