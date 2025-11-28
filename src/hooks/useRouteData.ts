@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { routeService, type CompleteRoute } from '@/services/routeService';
 import { tebsaApi, type TebsaUnit } from '@/services/tebsaApi';
+import { trackSolidApi, type TrackSolidUnit } from '@/services/trackSolidApi';
 import { gpsUnitsService } from '@/services/gpsUnitsService';
 import { TEBSA_CONFIG } from '@/config/tebsa';
 
@@ -67,42 +68,71 @@ export const useRouteData = (): UseRouteDataReturn => {
 
   // No simulation - only real API data
 
-  // Fetch real-time bus locations from TEBSA API
+  // Fetch real-time bus locations from both TEBSA and TrackSolid APIs
   useEffect(() => {
     if (!currentRoute) return;
 
     const fetchBusLocations = async () => {
       try {
         setApiError(null);
-        console.log('[useRouteData] Fetching real bus data from TEBSA API...');
+        console.log('[useRouteData] Fetching bus data from GPS providers...');
         
-        // Get units from TEBSA API and economic numbers from database
-        const [units, economicNumberMap] = await Promise.all([
-          tebsaApi.getM1R18Units(),
+        // Get units by provider from database
+        const [tebsaUnits, trackSolidUnits, economicNumberMap] = await Promise.all([
+          gpsUnitsService.getUnitsByProvider('tebsa'),
+          gpsUnitsService.getUnitsByProvider('tracksolid'),
           gpsUnitsService.getImeiToEconomicNumberMap()
         ]);
-        
-        // Enrich units with economic numbers
-        const enrichedUnits = units.map(unit => ({
-          ...unit,
-          economicNumber: economicNumberMap.get(parseInt(unit.id)) || undefined
+
+        console.log(`[useRouteData] Found ${tebsaUnits.length} TEBSA units, ${trackSolidUnits.length} TrackSolid units`);
+
+        // Fetch locations from both providers in parallel
+        const [tebsaLocations, trackSolidLocations] = await Promise.all([
+          tebsaUnits.length > 0 
+            ? Promise.all(tebsaUnits.map(unit => 
+                tebsaApi.getUnitLocation(unit.imei)
+              )).then(results => results.flat())
+            : Promise.resolve([]),
+          trackSolidUnits.length > 0
+            ? trackSolidApi.getMultipleUnitsLocation(trackSolidUnits.map(u => u.imei))
+            : Promise.resolve([])
+        ]);
+
+        // Transform TrackSolid units to TebsaUnit format for compatibility
+        const transformedTrackSolidUnits: TebsaUnit[] = trackSolidLocations.map(unit => ({
+          id: unit.id.toString(),
+          latitud: unit.lat,
+          longitud: unit.lng,
+          velocidad: unit.speed,
+          orientacion: unit.orientation,
+          disponible: unit.available,
+          economicNumber: economicNumberMap.get(unit.id)
         }));
+
+        // Combine results from both providers
+        const allUnits: TebsaUnit[] = [
+          ...tebsaLocations.map(unit => ({
+            ...unit,
+            economicNumber: economicNumberMap.get(parseInt(unit.id))
+          })),
+          ...transformedTrackSolidUnits
+        ];
         
-        if (enrichedUnits.length > 0) {
-          console.log(`[useRouteData] Successfully fetched ${enrichedUnits.length} units from TEBSA API`);
-          setBusUnits(enrichedUnits);
+        if (allUnits.length > 0) {
+          console.log(`[useRouteData] Successfully fetched ${allUnits.length} units (${tebsaLocations.length} TEBSA, ${trackSolidLocations.length} TrackSolid)`);
+          setBusUnits(allUnits);
           setIsApiConnected(true);
           setIsRetrying(false);
           setLastUpdate(new Date());
         } else {
-          console.warn('[useRouteData] No units available from API');
+          console.warn('[useRouteData] No units available from any provider');
           setBusUnits([]);
           setIsApiConnected(false);
           setLastUpdate(new Date());
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[useRouteData] TEBSA API error:', errorMessage);
+        console.error('[useRouteData] GPS API error:', errorMessage);
         
         setApiError(errorMessage);
         setIsApiConnected(false);
