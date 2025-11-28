@@ -93,9 +93,8 @@ export const useRouteData = (): UseRouteDataReturn => {
                 tebsaApi.getUnitLocation(unit.imei)
               )).then(results => results.flat())
             : Promise.resolve([]),
-          trackSolidUnits.length > 0
-            ? trackSolidApi.getMultipleUnitsLocation(trackSolidUnits.map(u => u.imei))
-            : Promise.resolve([])
+          // Temporarily disabled TrackSolid due to rate limiting - will re-enable after cooldown period
+          Promise.resolve([])
         ]);
 
         // Transform TrackSolid units to TebsaUnit format for compatibility
