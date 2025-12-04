@@ -93,10 +93,9 @@ export const useRouteData = (): UseRouteDataReturn => {
                 tebsaApi.getUnitLocation(unit.imei)
               )).then(results => results.flat())
             : Promise.resolve([]),
-          // TrackSolid reactivated - fetch all units with rate limiting protection
-          trackSolidUnits.length > 0
-            ? trackSolidApi.getMultipleUnitsLocation(trackSolidUnits.map(u => u.imei))
-            : Promise.resolve([])
+          // TrackSolid DISABLED - rate limiting still active (error at 20:07 UTC Dec 4)
+          // Wait 24+ hours or contact TrackSolid support to increase API limits
+          Promise.resolve([])
         ]);
 
         // Transform TrackSolid units to TebsaUnit format for compatibility
