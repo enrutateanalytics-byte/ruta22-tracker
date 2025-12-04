@@ -93,8 +93,10 @@ export const useRouteData = (): UseRouteDataReturn => {
                 tebsaApi.getUnitLocation(unit.imei)
               )).then(results => results.flat())
             : Promise.resolve([]),
-          // TrackSolid disabled due to rate limiting - waiting for cooldown period (12-24 hours)
-          Promise.resolve([])
+          // TrackSolid reactivated - fetch all units with rate limiting protection
+          trackSolidUnits.length > 0
+            ? trackSolidApi.getMultipleUnitsLocation(trackSolidUnits.map(u => u.imei))
+            : Promise.resolve([])
         ]);
 
         // Transform TrackSolid units to TebsaUnit format for compatibility
