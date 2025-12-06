@@ -85,6 +85,12 @@ export const RouteEditor = ({ route, onSave, onCancel }: RouteEditorProps) => {
     setPoints(points.filter((_, i) => i !== index))
   }
 
+  const handleMovePoint = (index: number, newLat: number, newLng: number) => {
+    setPoints(points.map((point, i) => 
+      i === index ? { latitude: newLat, longitude: newLng } : point
+    ))
+  }
+
   const handleClearAllPoints = () => {
     if (points.length === 0) return
     if (confirm('¿Estás seguro de que quieres borrar todos los puntos de la ruta?')) {
@@ -269,7 +275,7 @@ export const RouteEditor = ({ route, onSave, onCancel }: RouteEditorProps) => {
                 <div>
                   <CardTitle>Mapa Interactivo</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Haz clic en el mapa para agregar puntos. Haz clic en un punto para eliminarlo. Puntos: {points.length}
+                    Haz clic en el mapa para agregar puntos. Arrastra un punto para moverlo. Clic en un punto para eliminarlo. Puntos: {points.length}
                   </p>
                 </div>
                 {points.length > 0 && (
@@ -299,6 +305,7 @@ export const RouteEditor = ({ route, onSave, onCancel }: RouteEditorProps) => {
                       point={point}
                       index={index}
                       onRemove={handleRemovePoint}
+                      onMove={handleMovePoint}
                     />
                   ))}
                   {/* Render stop markers */}
@@ -362,7 +369,17 @@ const RoutePolyline = ({ points, color }: { points: RoutePointData[], color: str
   return null
 }
 
-const PointMarker = ({ point, index, onRemove }: { point: RoutePointData, index: number, onRemove: (index: number) => void }) => {
+const PointMarker = ({ 
+  point, 
+  index, 
+  onRemove,
+  onMove 
+}: { 
+  point: RoutePointData, 
+  index: number, 
+  onRemove: (index: number) => void,
+  onMove: (index: number, lat: number, lng: number) => void
+}) => {
   useEffect(() => {
     const mapElement = document.querySelector('[data-map]') as any
     if (!mapElement?.mapInstance || !(window as any).google) return
@@ -371,6 +388,7 @@ const PointMarker = ({ point, index, onRemove }: { point: RoutePointData, index:
     const marker = new (window as any).google.maps.Marker({
       position: { lat: point.latitude, lng: point.longitude },
       map: map,
+      draggable: true,
       icon: {
         path: (window as any).google.maps.SymbolPath.CIRCLE,
         fillColor: '#ef4444',
@@ -379,21 +397,28 @@ const PointMarker = ({ point, index, onRemove }: { point: RoutePointData, index:
         strokeWeight: 2,
         scale: 6
       },
-      title: `Punto ${index + 1} - Clic para eliminar`,
-      cursor: 'pointer'
+      title: `Punto ${index + 1} - Arrastra para mover, clic para eliminar`,
+      cursor: 'grab'
     })
 
-    const listener = marker.addListener('click', () => {
+    const clickListener = marker.addListener('click', () => {
       onRemove(index)
+    })
+
+    const dragListener = marker.addListener('dragend', (event: any) => {
+      const newLat = event.latLng.lat()
+      const newLng = event.latLng.lng()
+      onMove(index, newLat, newLng)
     })
 
     return () => {
       if ((window as any).google?.maps?.event?.removeListener) {
-        (window as any).google.maps.event.removeListener(listener)
+        (window as any).google.maps.event.removeListener(clickListener)
+        (window as any).google.maps.event.removeListener(dragListener)
       }
       marker.setMap(null)
     }
-  }, [point, index, onRemove])
+  }, [point, index, onRemove, onMove])
 
   return null
 }
