@@ -412,10 +412,8 @@ const PointMarker = ({
     })
 
     return () => {
-      if ((window as any).google?.maps?.event?.removeListener) {
-        (window as any).google.maps.event.removeListener(clickListener)
-        (window as any).google.maps.event.removeListener(dragListener)
-      }
+      google.maps.event.removeListener(clickListener)
+      google.maps.event.removeListener(dragListener)
       marker.setMap(null)
     }
   }, [point, index, onRemove, onMove])
