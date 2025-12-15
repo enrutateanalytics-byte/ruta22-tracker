@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createHash } from "node:crypto";
+import { Md5 } from "https://deno.land/std@0.160.0/hash/md5.ts";
 
 const TRACKSOLID_API_URL = "https://hk-open.tracksolidpro.com/route/rest";
 
@@ -30,9 +30,10 @@ function generateSign(params: Record<string, any>, appSecret: string): string {
   
   console.log("[TrackSolid Proxy] Sign string:", signStr);
   
-  // Generate MD5 hash (uppercase) using Node crypto
-  const hashHex = createHash('md5').update(signStr).digest('hex');
-  const signature = hashHex.toUpperCase();
+  // Generate MD5 hash (uppercase) using Deno's Md5 class
+  const md5 = new Md5();
+  md5.update(signStr);
+  const signature = md5.toString().toUpperCase();
   
   console.log("[TrackSolid Proxy] Generated signature:", signature);
   
@@ -159,7 +160,7 @@ async function getDeviceLocation(
     imeis: imei,
   };
 
-  const sign = await generateSign(params, appSecret);
+  const sign = generateSign(params, appSecret);
   
   const formData = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
