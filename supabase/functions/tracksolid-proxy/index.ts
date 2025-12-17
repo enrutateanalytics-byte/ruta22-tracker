@@ -326,13 +326,20 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("[TrackSolid Proxy] Error:", error);
+
+    // IMPORTANT:
+    // TrackSolid may temporarily block requests with "请求频率过高" (request frequency too high).
+    // Returning HTTP 200 prevents the client from treating it as a transport failure and crashing UI.
     return new Response(
       JSON.stringify({
         codigo: -1,
         mensaje: error instanceof Error ? error.message : "Error",
-        latitud: 0, longitud: 0, velocidad: 0, orientacion: 0,
+        latitud: 0,
+        longitud: 0,
+        velocidad: 0,
+        orientacion: 0,
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
