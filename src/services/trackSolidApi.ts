@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 export interface TrackSolidUnit {
   id: number;
   lat: number;
@@ -9,97 +7,90 @@ export interface TrackSolidUnit {
   available: boolean;
 }
 
-export interface TrackSolidApiResponse {
-  codigo: number;
-  mensaje: string;
-  latitud: number;
-  longitud: number;
-  velocidad: number;
-  orientacion: number;
+export interface TrackSolidBatchResponse {
+  success: boolean;
+  count: number;
+  units: {
+    imei: string;
+    codigo: number;
+    mensaje: string;
+    latitud: number;
+    longitud: number;
+    velocidad: number;
+    orientacion: number;
+  }[];
 }
 
-const MAX_RETRIES = 1; // Reduced to avoid overwhelming TrackSolid
-const RETRY_DELAY = 2000; // 2 seconds
+const PROXY_URL = "https://pfbkwcuuqowllpnxokxh.supabase.co/functions/v1/tracksolid-proxy";
+const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmYmt3Y3V1cW93bGxwbnhva3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NTU4NDcsImV4cCI6MjA3NDUzMTg0N30.SAL7nBlINRqBvn6wc5V8WT81ID_Y4PIPMHdbZaJJgPQ";
 
 export const trackSolidApi = {
   /**
-   * Fetch location data for a specific unit by IMEI
+   * Fetch location data for ALL units in a single batch call
+   * Uses jimi.user.device.location.list which has 86,400 calls/day limit
+   * This is 10x more than individual calls and returns all locations at once
    */
-  async getUnitLocation(imei: number, retryCount = 0): Promise<TrackSolidUnit[]> {
-    try {
-      console.log(`[TrackSolid API] Fetching location for IMEI: ${imei}`);
+  async getBatchLocations(imeis: number[]): Promise<TrackSolidUnit[]> {
+    if (imeis.length === 0) return [];
 
-      const url = `https://pfbkwcuuqowllpnxokxh.supabase.co/functions/v1/tracksolid-proxy?imei=${imei}`;
+    try {
+      const imeiString = imeis.join(',');
+      console.log(`[TrackSolid API] Batch request for ${imeis.length} units`);
+
+      const url = `${PROXY_URL}?mode=batch&imeis=${imeiString}`;
       
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmYmt3Y3V1cW93bGxwbnhva3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5NTU4NDcsImV4cCI6MjA3NDUzMTg0N30.SAL7nBlINRqBvn6wc5V8WT81ID_Y4PIPMHdbZaJJgPQ'
+          'apikey': API_KEY
         }
       });
 
       if (!response.ok) {
-        throw new Error(`Edge Function returned a non-2xx status code`);
+        throw new Error(`Edge Function returned status ${response.status}`);
       }
 
-      const data = await response.json() as TrackSolidApiResponse;
+      const data = await response.json() as TrackSolidBatchResponse;
 
-      // Transform response to unit format
-      if (data.codigo === 1 && data.mensaje === "Disponible") {
-        return [{
-          id: imei,
-          lat: data.latitud,
-          lng: data.longitud,
-          speed: data.velocidad,
-          orientation: data.orientacion,
+      if (!data.success || !data.units) {
+        console.warn('[TrackSolid API] Batch request failed:', data);
+        return [];
+      }
+
+      // Transform to TrackSolidUnit format, filtering only available units
+      const availableUnits: TrackSolidUnit[] = data.units
+        .filter(unit => unit.codigo === 1)
+        .map(unit => ({
+          id: parseInt(unit.imei),
+          lat: unit.latitud,
+          lng: unit.longitud,
+          speed: unit.velocidad,
+          orientation: unit.orientacion,
           available: true,
-        }];
-      }
+        }));
 
-      console.log(`[TrackSolid API] Unit ${imei} not available: ${data.mensaje}`);
-      return [];
+      console.log(`[TrackSolid API] Batch: ${availableUnits.length} of ${imeis.length} units available`);
+      return availableUnits;
 
     } catch (error) {
-      console.error(`[TrackSolid API] Error fetching unit ${imei}:`, error);
-
-      // Retry logic for network errors
-      if (retryCount < MAX_RETRIES) {
-        console.log(`[TrackSolid API] Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
-        return this.getUnitLocation(imei, retryCount + 1);
-      }
-
+      console.error('[TrackSolid API] Batch error:', error);
       return [];
     }
   },
 
   /**
-   * Fetch location data for multiple units with significant delays to avoid rate limiting
+   * @deprecated Use getBatchLocations instead for better performance
+   * Kept for backward compatibility
    */
   async getMultipleUnitsLocation(imeis: number[]): Promise<TrackSolidUnit[]> {
-    console.log(`[TrackSolid API] Fetching locations for ${imeis.length} units (sequential with 1.5s delays)`);
+    return this.getBatchLocations(imeis);
+  },
 
-    const availableUnits: TrackSolidUnit[] = [];
-    
-    // Process units sequentially with 1.5 second delay between each
-    for (let i = 0; i < imeis.length; i++) {
-      const imei = imeis[i];
-      
-      try {
-        const units = await this.getUnitLocation(imei);
-        availableUnits.push(...units.filter(unit => unit.available));
-      } catch (error) {
-        console.error(`[TrackSolid API] Failed to fetch unit ${imei}:`, error);
-      }
-      
-      // Wait 1.5 seconds before next request (except for last one)
-      if (i < imeis.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
-    }
-    
-    console.log(`[TrackSolid API] ${availableUnits.length} of ${imeis.length} units available`);
-    
-    return availableUnits;
+  /**
+   * @deprecated Use getBatchLocations instead
+   * Fetch location for a single unit
+   */
+  async getUnitLocation(imei: number): Promise<TrackSolidUnit[]> {
+    return this.getBatchLocations([imei]);
   }
 };
