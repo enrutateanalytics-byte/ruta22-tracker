@@ -10,8 +10,8 @@ const corsHeaders = {
 // Global token cache
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 
-// Location cache to reduce API calls - cache for 45 seconds
-const locationCache = new Map<string, { data: any; expiresAt: number }>();
+// Batch location cache - cache for 30 seconds to reduce API calls
+let batchLocationCache: { data: any[]; expiresAt: number } | null = null;
 
 /**
  * Simple MD5 implementation for signing
@@ -119,11 +119,7 @@ function generateSign(params: Record<string, any>, appSecret: string): string {
   }
   signStr += appSecret;
   
-  console.log("[TrackSolid Proxy] Sign string:", signStr);
-  
   const signature = md5(signStr).toUpperCase();
-  console.log("[TrackSolid Proxy] Generated signature:", signature);
-  
   return signature;
 }
 
@@ -206,33 +202,33 @@ async function getAccessToken(
 }
 
 /**
- * Get location for specific IMEI
+ * Get locations for ALL devices using the batch method (jimi.user.device.location.list)
+ * This method has a limit of 86,400 calls/day vs 8,640 for individual calls
+ * It returns all device locations in a single API call
  */
-async function getDeviceLocation(
-  imei: string,
+async function getAllDevicesLocation(
+  imeis: string,
   accessToken: string,
   appKey: string,
   appSecret: string
-): Promise<any> {
-  const cacheKey = `location_${imei}`;
-  const cached = locationCache.get(cacheKey);
-  
-  if (cached && Date.now() < cached.expiresAt) {
-    console.log(`[TrackSolid Proxy] Using cached location for IMEI: ${imei}`);
-    return cached.data;
+): Promise<any[]> {
+  // Check batch cache first
+  if (batchLocationCache && Date.now() < batchLocationCache.expiresAt) {
+    console.log("[TrackSolid Proxy] Using cached batch locations");
+    return batchLocationCache.data;
   }
 
-  console.log(`[TrackSolid Proxy] Fetching location for IMEI: ${imei}`);
+  console.log(`[TrackSolid Proxy] Fetching batch locations for IMEIs: ${imeis}`);
   
   const params = {
-    method: "jimi.device.location.get",
+    method: "jimi.user.device.location.list",
     timestamp: getTimestamp(),
     app_key: appKey,
     sign_method: "md5",
     v: "1.0",
     format: "json",
     access_token: accessToken,
-    imeis: imei,
+    imeis: imeis,
   };
 
   const sign = generateSign(params, appSecret);
@@ -250,22 +246,27 @@ async function getDeviceLocation(
   });
 
   if (!response.ok) {
-    throw new Error(`TrackSolid location failed: ${response.status}`);
+    throw new Error(`TrackSolid batch location failed: ${response.status}`);
   }
 
   const data = await response.json();
+  console.log("[TrackSolid Proxy] Batch API response:", JSON.stringify(data).substring(0, 500));
   
   if (data.code !== 0) {
     if (data.code === 1004) cachedToken = null;
-    throw new Error(`TrackSolid error: ${data.message}`);
+    throw new Error(`TrackSolid batch error: ${data.message}`);
   }
 
-  locationCache.set(cacheKey, {
-    data: data.result,
-    expiresAt: Date.now() + 45000
-  });
+  const locations = data.result || [];
+  
+  // Cache for 30 seconds
+  batchLocationCache = {
+    data: locations,
+    expiresAt: Date.now() + 30000
+  };
 
-  return data.result;
+  console.log(`[TrackSolid Proxy] Batch fetched ${locations.length} device locations`);
+  return locations;
 }
 
 serve(async (req) => {
@@ -284,28 +285,56 @@ serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const imei = url.searchParams.get("imei");
+    const mode = url.searchParams.get("mode");
+    const imeis = url.searchParams.get("imeis"); // Comma-separated IMEIs for batch
 
+    // BATCH MODE: Get all devices in one call using jimi.user.device.location.list
+    if (mode === "batch" && imeis) {
+      console.log(`[TrackSolid Proxy] Batch mode requested for ${imeis.split(',').length} devices`);
+      
+      const accessToken = await getAccessToken(account, passwordMd5, appKey, appSecret);
+      const locations = await getAllDevicesLocation(imeis, accessToken, appKey, appSecret);
+
+      // Transform to our standard format
+      const results = locations.map((loc: any) => {
+        const isAvailable = loc.status !== "0" && loc.lat && loc.lng;
+        return {
+          imei: loc.imei,
+          codigo: isAvailable ? 1 : 0,
+          mensaje: isAvailable ? "Disponible" : "No disponible",
+          latitud: isAvailable ? loc.lat : 0,
+          longitud: isAvailable ? loc.lng : 0,
+          velocidad: parseFloat(loc.speed) || 0,
+          orientacion: parseFloat(loc.direction) || 0,
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          count: results.length,
+          units: results 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // LEGACY: Single IMEI mode (kept for backward compatibility)
+    const imei = url.searchParams.get("imei");
     if (!imei) {
       return new Response(
-        JSON.stringify({ codigo: -1, mensaje: "IMEI required" }),
+        JSON.stringify({ codigo: -1, mensaje: "IMEI or batch mode required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // For single IMEI, use the batch method but filter for just this IMEI
     const accessToken = await getAccessToken(account, passwordMd5, appKey, appSecret);
-    const locations = await getDeviceLocation(imei, accessToken, appKey, appSecret);
+    const locations = await getAllDevicesLocation(imei, accessToken, appKey, appSecret);
 
-    if (locations && locations.length > 0) {
-      const loc = locations[0];
-      
-      if (loc.status === "0" || !loc.lat || !loc.lng) {
-        return new Response(
-          JSON.stringify({ codigo: 0, mensaje: "No disponible", latitud: 0, longitud: 0, velocidad: 0, orientacion: 0 }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
+    const loc = locations.find((l: any) => l.imei === imei);
+    
+    if (loc && loc.status !== "0" && loc.lat && loc.lng) {
       return new Response(
         JSON.stringify({
           codigo: 1,
@@ -313,7 +342,7 @@ serve(async (req) => {
           latitud: loc.lat,
           longitud: loc.lng,
           velocidad: parseFloat(loc.speed) || 0,
-          orientacion: 0,
+          orientacion: parseFloat(loc.direction) || 0,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -327,9 +356,6 @@ serve(async (req) => {
   } catch (error) {
     console.error("[TrackSolid Proxy] Error:", error);
 
-    // IMPORTANT:
-    // TrackSolid may temporarily block requests with "请求频率过高" (request frequency too high).
-    // Returning HTTP 200 prevents the client from treating it as a transport failure and crashing UI.
     return new Response(
       JSON.stringify({
         codigo: -1,

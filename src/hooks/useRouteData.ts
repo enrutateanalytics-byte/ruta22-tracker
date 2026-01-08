@@ -87,6 +87,7 @@ export const useRouteData = (): UseRouteDataReturn => {
         console.log(`[useRouteData] Found ${tebsaUnits.length} TEBSA units, ${trackSolidUnits.length} TrackSolid units`);
 
         // Fetch locations from both providers in parallel
+        // TrackSolid uses batch method (1 API call for all units) to avoid rate limiting
         const [tebsaLocations, trackSolidLocations] = await Promise.all([
           tebsaUnits.length > 0 
             ? Promise.all(tebsaUnits.map(unit => 
@@ -94,7 +95,7 @@ export const useRouteData = (): UseRouteDataReturn => {
               )).then(results => results.flat())
             : Promise.resolve([]),
           trackSolidUnits.length > 0 
-            ? trackSolidApi.getMultipleUnitsLocation(
+            ? trackSolidApi.getBatchLocations(
                 trackSolidUnits.map(unit => unit.imei)
               )
             : Promise.resolve([])
