@@ -10,8 +10,12 @@ const corsHeaders = {
 // Global token cache
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 
-// Batch location cache - cache for 30 seconds to reduce API calls
+// Batch location cache - cache for 60 seconds to reduce API calls
+// This means only 1 API call per minute even if 100 users open the app
 let batchLocationCache: { data: any[]; expiresAt: number } | null = null;
+
+// Rate limit tracking - if blocked, wait before retrying
+let rateLimitState: { isBlocked: boolean; blockedUntil: number } = { isBlocked: false, blockedUntil: 0 };
 
 /**
  * Simple MD5 implementation for signing
@@ -212,6 +216,13 @@ async function getAllDevicesLocation(
   appKey: string,
   appSecret: string
 ): Promise<any[]> {
+  // Check if rate limited
+  if (rateLimitState.isBlocked && Date.now() < rateLimitState.blockedUntil) {
+    const waitMinutes = Math.ceil((rateLimitState.blockedUntil - Date.now()) / 60000);
+    console.log(`[TrackSolid Proxy] Rate limited, returning cached data. Wait ${waitMinutes} min`);
+    return batchLocationCache?.data || [];
+  }
+
   // Check batch cache first
   if (batchLocationCache && Date.now() < batchLocationCache.expiresAt) {
     console.log("[TrackSolid Proxy] Using cached batch locations");
@@ -254,15 +265,25 @@ async function getAllDevicesLocation(
   
   if (data.code !== 0) {
     if (data.code === 1004) cachedToken = null;
+    
+    // Check for rate limiting error
+    if (data.message && (data.message.includes('频率过高') || data.message.includes('请求频率'))) {
+      console.log("[TrackSolid Proxy] Rate limited! Blocking for 5 minutes");
+      rateLimitState = { isBlocked: true, blockedUntil: Date.now() + 5 * 60 * 1000 };
+    }
+    
     throw new Error(`TrackSolid batch error: ${data.message}`);
   }
 
+  // Success - clear any rate limit state
+  rateLimitState = { isBlocked: false, blockedUntil: 0 };
+
   const locations = data.result || [];
   
-  // Cache for 30 seconds
+  // Cache for 60 seconds - protects against multiple users opening app simultaneously
   batchLocationCache = {
     data: locations,
-    expiresAt: Date.now() + 30000
+    expiresAt: Date.now() + 60000
   };
 
   console.log(`[TrackSolid Proxy] Batch fetched ${locations.length} device locations`);

@@ -3,7 +3,7 @@ export const TEBSA_CONFIG = {
   API_URL: "https://wstijuana45da56.nrtec-sys.com/tebsa/getUbicacion",
   API_KEY: "6eiWLiJI3l0vWOSKPq", // TEBSA API key configured
   UNIT_IDS: [], // Ahora usamos unidades TrackSolid
-  POLLING_INTERVAL: 120000, // 2 minutes - increased to avoid TrackSolid rate limiting
+  POLLING_INTERVAL: 60000, // 60 seconds - synced with proxy cache to minimize API calls
   FALLBACK_TO_SIMULATION: true, // Enable simulation when API is not available
 };
 
