@@ -1,34 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const TRACKSOLID_API_URL = "https://hk-open.tracksolidpro.com/route/rest";
+const CACHE_DURATION_SECONDS = 20; // 20 seconds cache for real-time updates
+const CACHE_DURATION_THROTTLED_SECONDS = 60; // 60 seconds when near daily limit
+const DAILY_CALL_SOFT_LIMIT = 50000; // At 50k calls, increase cache duration
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Global token cache
-let cachedToken: { accessToken: string; expiresAt: number } | null = null;
-
-// Batch location cache - cache for 20 seconds for real-time updates
-// With 86,400 daily limit and 20s cache = max 4,320 calls/day (5% of limit)
-let batchLocationCache: { data: any[]; expiresAt: number } | null = null;
-const CACHE_DURATION_MS = 20000; // 20 seconds
-
-// Rate limit tracking with exponential backoff
-let rateLimitState: { 
-  isBlocked: boolean; 
-  blockedUntil: number;
-  consecutiveFailures: number;
-} = { isBlocked: false, blockedUntil: 0, consecutiveFailures: 0 };
-
-// Daily call counter - resets every 24 hours
-let dailyCallCounter: { count: number; resetAt: number } = { 
-  count: 0, 
-  resetAt: Date.now() + 24 * 60 * 60 * 1000 
-};
-const DAILY_CALL_SOFT_LIMIT = 50000; // At 50k calls, increase cache duration
-const CACHE_DURATION_THROTTLED_MS = 60000; // 60 seconds when throttled
 
 /**
  * Simple MD5 implementation for signing
@@ -154,21 +135,136 @@ function getTimestamp(): string {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+interface RateLimitState {
+  id: string;
+  is_blocked: boolean;
+  blocked_until: string | null;
+  consecutive_failures: number;
+  last_success_at: string | null;
+  cached_token: string | null;
+  token_expires_at: string | null;
+  cached_locations: any[] | null;
+  locations_expires_at: string | null;
+  daily_call_count: number;
+  daily_reset_at: string;
+  updated_at: string;
+}
+
 /**
- * Get access token from TrackSolid API
+ * Get or create rate limit state from database
+ */
+async function getRateLimitState(supabase: any): Promise<RateLimitState> {
+  const { data, error } = await supabase
+    .from('api_rate_limit_state')
+    .select('*')
+    .eq('id', 'tracksolid')
+    .single();
+  
+  if (error || !data) {
+    // Create default state if not exists
+    const defaultState: Partial<RateLimitState> = {
+      id: 'tracksolid',
+      is_blocked: false,
+      blocked_until: null,
+      consecutive_failures: 0,
+      last_success_at: null,
+      cached_token: null,
+      token_expires_at: null,
+      cached_locations: null,
+      locations_expires_at: null,
+      daily_call_count: 0,
+      daily_reset_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+    
+    const { data: newData } = await supabase
+      .from('api_rate_limit_state')
+      .upsert(defaultState)
+      .select()
+      .single();
+    
+    return newData || defaultState as RateLimitState;
+  }
+  
+  return data;
+}
+
+/**
+ * Update rate limit state in database
+ */
+async function updateRateLimitState(supabase: any, updates: Partial<RateLimitState>): Promise<void> {
+  await supabase
+    .from('api_rate_limit_state')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', 'tracksolid');
+}
+
+/**
+ * Check if we're rate limited
+ */
+function isRateLimited(state: RateLimitState): { blocked: boolean; waitMinutes: number } {
+  if (!state.is_blocked || !state.blocked_until) {
+    return { blocked: false, waitMinutes: 0 };
+  }
+  
+  const blockedUntil = new Date(state.blocked_until).getTime();
+  const now = Date.now();
+  
+  if (now < blockedUntil) {
+    return { blocked: true, waitMinutes: Math.ceil((blockedUntil - now) / 60000) };
+  }
+  
+  return { blocked: false, waitMinutes: 0 };
+}
+
+/**
+ * Check if cached locations are still valid
+ */
+function isCacheValid(state: RateLimitState): boolean {
+  if (!state.cached_locations || !state.locations_expires_at) {
+    return false;
+  }
+  
+  const expiresAt = new Date(state.locations_expires_at).getTime();
+  return Date.now() < expiresAt;
+}
+
+/**
+ * Check if cached token is still valid
+ */
+function isTokenValid(state: RateLimitState): boolean {
+  if (!state.cached_token || !state.token_expires_at) {
+    return false;
+  }
+  
+  const expiresAt = new Date(state.token_expires_at).getTime();
+  return Date.now() < expiresAt;
+}
+
+/**
+ * Get access token from TrackSolid API (with persistent caching)
  */
 async function getAccessToken(
+  supabase: any,
+  state: RateLimitState,
   account: string,
   passwordMd5: string,
   appKey: string,
   appSecret: string
-): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt) {
-    console.log("[TrackSolid Proxy] Using cached access token");
-    return cachedToken.accessToken;
+): Promise<{ token: string; state: RateLimitState }> {
+  // Check if we have a valid cached token
+  if (isTokenValid(state)) {
+    console.log("[TrackSolid Proxy] Using cached access token from DB");
+    return { token: state.cached_token!, state };
   }
 
-  console.log("[TrackSolid Proxy] Fetching new access token");
+  // Check if we're rate limited
+  const rateLimitCheck = isRateLimited(state);
+  if (rateLimitCheck.blocked) {
+    console.log(`[TrackSolid Proxy] Rate limited on auth, wait ${rateLimitCheck.waitMinutes} min`);
+    throw new Error(`Rate limited. Try again in ${rateLimitCheck.waitMinutes} minutes.`);
+  }
+
+  console.log("[TrackSolid Proxy] Fetching new access token from API");
   
   const params = {
     method: "jimi.oauth.token.get",
@@ -203,57 +299,85 @@ async function getAccessToken(
   const data = await response.json();
   
   if (data.code !== 0) {
+    // Check for rate limiting error
+    if (data.message && (data.message.includes('频率过高') || data.message.includes('请求频率') || data.message.toLowerCase().includes('rate') || data.message.toLowerCase().includes('frequency'))) {
+      // Exponential backoff: 5 min -> 10 min -> 20 min -> 30 min (max)
+      const failures = state.consecutive_failures + 1;
+      const backoffMinutes = Math.min(5 * Math.pow(2, failures - 1), 30);
+      
+      console.log(`[TrackSolid Proxy] Auth rate limited! Attempt ${failures}, blocking for ${backoffMinutes} minutes`);
+      
+      await updateRateLimitState(supabase, {
+        is_blocked: true,
+        blocked_until: new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString(),
+        consecutive_failures: failures,
+      });
+      
+      throw new Error(`Rate limited. Try again in ${backoffMinutes} minutes.`);
+    }
+    
     throw new Error(`TrackSolid auth error: ${data.message}`);
   }
 
   const accessToken = data.result.accessToken;
   const expiresIn = parseInt(data.result.expiresIn) || 7200;
   
-  cachedToken = {
-    accessToken,
-    expiresAt: Date.now() + (expiresIn - 300) * 1000,
-  };
+  // Cache token in database (expire 5 min before actual expiry)
+  const tokenExpiresAt = new Date(Date.now() + (expiresIn - 300) * 1000).toISOString();
+  
+  await updateRateLimitState(supabase, {
+    cached_token: accessToken,
+    token_expires_at: tokenExpiresAt,
+    is_blocked: false,
+    blocked_until: null,
+    consecutive_failures: 0,
+    last_success_at: new Date().toISOString(),
+  });
 
-  console.log("[TrackSolid Proxy] Access token obtained");
-  return accessToken;
+  console.log("[TrackSolid Proxy] Access token obtained and cached in DB");
+  
+  // Return updated state
+  const newState = { ...state, cached_token: accessToken, token_expires_at: tokenExpiresAt };
+  return { token: accessToken, state: newState };
 }
 
 /**
  * Get locations for ALL devices using the batch method (jimi.user.device.location.list)
  * This method has a limit of 86,400 calls/day vs 8,640 for individual calls
- * It returns all device locations in a single API call
  */
 async function getAllDevicesLocation(
+  supabase: any,
+  state: RateLimitState,
   imeis: string,
   accessToken: string,
   appKey: string,
   appSecret: string
 ): Promise<any[]> {
   // Reset daily counter if past reset time
-  if (Date.now() > dailyCallCounter.resetAt) {
+  const dailyResetAt = new Date(state.daily_reset_at).getTime();
+  if (Date.now() > dailyResetAt) {
     console.log("[TrackSolid Proxy] Resetting daily call counter");
-    dailyCallCounter = { count: 0, resetAt: Date.now() + 24 * 60 * 60 * 1000 };
+    await updateRateLimitState(supabase, {
+      daily_call_count: 0,
+      daily_reset_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    state.daily_call_count = 0;
   }
 
-  // Check if rate limited (exponential backoff)
-  if (rateLimitState.isBlocked && Date.now() < rateLimitState.blockedUntil) {
-    const waitMinutes = Math.ceil((rateLimitState.blockedUntil - Date.now()) / 60000);
-    console.log(`[TrackSolid Proxy] Rate limited (attempt ${rateLimitState.consecutiveFailures}), returning cached data. Wait ${waitMinutes} min`);
-    return batchLocationCache?.data || [];
+  // Check if we're rate limited
+  const rateLimitCheck = isRateLimited(state);
+  if (rateLimitCheck.blocked) {
+    console.log(`[TrackSolid Proxy] Rate limited, returning cached data. Wait ${rateLimitCheck.waitMinutes} min`);
+    return state.cached_locations || [];
   }
 
-  // Determine cache duration based on daily usage
-  const currentCacheDuration = dailyCallCounter.count > DAILY_CALL_SOFT_LIMIT 
-    ? CACHE_DURATION_THROTTLED_MS 
-    : CACHE_DURATION_MS;
-
-  // Check batch cache first
-  if (batchLocationCache && Date.now() < batchLocationCache.expiresAt) {
-    console.log("[TrackSolid Proxy] Using cached batch locations");
-    return batchLocationCache.data;
+  // Check cache first
+  if (isCacheValid(state)) {
+    console.log("[TrackSolid Proxy] Using cached batch locations from DB");
+    return state.cached_locations || [];
   }
 
-  console.log(`[TrackSolid Proxy] Fetching batch locations for IMEIs: ${imeis}`);
+  console.log(`[TrackSolid Proxy] Fetching batch locations for ${imeis.split(',').length} devices`);
   
   const params = {
     method: "jimi.user.device.location.list",
@@ -285,44 +409,56 @@ async function getAllDevicesLocation(
   }
 
   const data = await response.json();
-  console.log("[TrackSolid Proxy] Batch API response:", JSON.stringify(data).substring(0, 500));
+  console.log("[TrackSolid Proxy] Batch API response code:", data.code);
   
   if (data.code !== 0) {
-    if (data.code === 1004) cachedToken = null;
+    if (data.code === 1004) {
+      // Token expired, clear it
+      await updateRateLimitState(supabase, { cached_token: null, token_expires_at: null });
+    }
     
-    // Check for rate limiting error (Chinese: "频率过高" = frequency too high, "请求频率" = request frequency)
+    // Check for rate limiting error
     if (data.message && (data.message.includes('频率过高') || data.message.includes('请求频率') || data.message.toLowerCase().includes('rate') || data.message.toLowerCase().includes('frequency'))) {
-      // Exponential backoff: 5 min -> 15 min -> 30 min
-      rateLimitState.consecutiveFailures++;
-      const backoffMinutes = Math.min(5 * Math.pow(2, rateLimitState.consecutiveFailures - 1), 30);
-      console.log(`[TrackSolid Proxy] Rate limited! Attempt ${rateLimitState.consecutiveFailures}, blocking for ${backoffMinutes} minutes`);
-      rateLimitState.isBlocked = true;
-      rateLimitState.blockedUntil = Date.now() + backoffMinutes * 60 * 1000;
+      const failures = state.consecutive_failures + 1;
+      const backoffMinutes = Math.min(5 * Math.pow(2, failures - 1), 30);
+      
+      console.log(`[TrackSolid Proxy] Locations rate limited! Attempt ${failures}, blocking for ${backoffMinutes} minutes`);
+      
+      await updateRateLimitState(supabase, {
+        is_blocked: true,
+        blocked_until: new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString(),
+        consecutive_failures: failures,
+      });
+      
+      // Return cached data if available
+      return state.cached_locations || [];
     }
     
     throw new Error(`TrackSolid batch error: ${data.message}`);
   }
 
-  // Success - clear rate limit state and increment daily counter
-  rateLimitState = { isBlocked: false, blockedUntil: 0, consecutiveFailures: 0 };
-  dailyCallCounter.count++;
-  
-  console.log(`[TrackSolid Proxy] Daily API calls: ${dailyCallCounter.count}/${DAILY_CALL_SOFT_LIMIT} (soft limit)`);
-
+  // Success - update state
   const locations = data.result || [];
+  const newDailyCount = state.daily_call_count + 1;
   
   // Determine cache duration based on daily usage
-  const cacheDuration = dailyCallCounter.count > DAILY_CALL_SOFT_LIMIT 
-    ? CACHE_DURATION_THROTTLED_MS 
-    : CACHE_DURATION_MS;
+  const cacheDurationSeconds = newDailyCount > DAILY_CALL_SOFT_LIMIT 
+    ? CACHE_DURATION_THROTTLED_SECONDS 
+    : CACHE_DURATION_SECONDS;
   
-  // Cache locations
-  batchLocationCache = {
-    data: locations,
-    expiresAt: Date.now() + cacheDuration
-  };
+  const locationsExpiresAt = new Date(Date.now() + cacheDurationSeconds * 1000).toISOString();
+  
+  await updateRateLimitState(supabase, {
+    cached_locations: locations,
+    locations_expires_at: locationsExpiresAt,
+    is_blocked: false,
+    blocked_until: null,
+    consecutive_failures: 0,
+    last_success_at: new Date().toISOString(),
+    daily_call_count: newDailyCount,
+  });
 
-  console.log(`[TrackSolid Proxy] Batch fetched ${locations.length} device locations`);
+  console.log(`[TrackSolid Proxy] Fetched ${locations.length} devices. Daily calls: ${newDailyCount}/${DAILY_CALL_SOFT_LIMIT}`);
   return locations;
 }
 
@@ -332,6 +468,11 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client with service role for DB access
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const account = Deno.env.get("TRACKSOLID_ACCOUNT");
     const passwordMd5 = Deno.env.get("TRACKSOLID_PASSWORD_MD5");
     const appKey = Deno.env.get("TRACKSOLID_APP_KEY");
@@ -343,16 +484,73 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode");
-    const imeis = url.searchParams.get("imeis"); // Comma-separated IMEIs for batch
+    const imeis = url.searchParams.get("imeis");
 
-    // BATCH MODE: Get all devices in one call using jimi.user.device.location.list
+    // Get current rate limit state from database
+    let state = await getRateLimitState(supabase);
+
+    // BATCH MODE: Get all devices in one call
     if (mode === "batch" && imeis) {
-      console.log(`[TrackSolid Proxy] Batch mode requested for ${imeis.split(',').length} devices`);
+      console.log(`[TrackSolid Proxy] Batch mode for ${imeis.split(',').length} devices`);
       
-      const accessToken = await getAccessToken(account, passwordMd5, appKey, appSecret);
-      const locations = await getAllDevicesLocation(imeis, accessToken, appKey, appSecret);
+      // Check if we have valid cached data (no need to get token)
+      if (isCacheValid(state)) {
+        console.log("[TrackSolid Proxy] Returning cached locations from DB");
+        const results = (state.cached_locations || []).map((loc: any) => {
+          const isAvailable = loc.status !== "0" && loc.lat && loc.lng;
+          return {
+            imei: loc.imei,
+            codigo: isAvailable ? 1 : 0,
+            mensaje: isAvailable ? "Disponible" : "No disponible",
+            latitud: isAvailable ? loc.lat : 0,
+            longitud: isAvailable ? loc.lng : 0,
+            velocidad: parseFloat(loc.speed) || 0,
+            orientacion: parseFloat(loc.direction) || 0,
+          };
+        });
+        
+        return new Response(
+          JSON.stringify({ success: true, count: results.length, units: results, cached: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Check if rate limited
+      const rateLimitCheck = isRateLimited(state);
+      if (rateLimitCheck.blocked && state.cached_locations) {
+        console.log(`[TrackSolid Proxy] Rate limited, returning stale cache. Wait ${rateLimitCheck.waitMinutes} min`);
+        const results = state.cached_locations.map((loc: any) => {
+          const isAvailable = loc.status !== "0" && loc.lat && loc.lng;
+          return {
+            imei: loc.imei,
+            codigo: isAvailable ? 1 : 0,
+            mensaje: isAvailable ? "Disponible" : "No disponible",
+            latitud: isAvailable ? loc.lat : 0,
+            longitud: isAvailable ? loc.lng : 0,
+            velocidad: parseFloat(loc.speed) || 0,
+            orientacion: parseFloat(loc.direction) || 0,
+          };
+        });
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            count: results.length, 
+            units: results, 
+            cached: true, 
+            rate_limited: true,
+            retry_in_minutes: rateLimitCheck.waitMinutes 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Get token and locations
+      const tokenResult = await getAccessToken(supabase, state, account, passwordMd5, appKey, appSecret);
+      state = tokenResult.state;
+      
+      const locations = await getAllDevicesLocation(supabase, state, imeis, tokenResult.token, appKey, appSecret);
 
-      // Transform to our standard format
       const results = locations.map((loc: any) => {
         const isAvailable = loc.status !== "0" && loc.lat && loc.lng;
         return {
@@ -367,16 +565,12 @@ serve(async (req) => {
       });
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          count: results.length,
-          units: results 
-        }),
+        JSON.stringify({ success: true, count: results.length, units: results }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // LEGACY: Single IMEI mode (kept for backward compatibility)
+    // LEGACY: Single IMEI mode
     const imei = url.searchParams.get("imei");
     if (!imei) {
       return new Response(
@@ -385,10 +579,10 @@ serve(async (req) => {
       );
     }
 
-    // For single IMEI, use the batch method but filter for just this IMEI
-    const accessToken = await getAccessToken(account, passwordMd5, appKey, appSecret);
-    const locations = await getAllDevicesLocation(imei, accessToken, appKey, appSecret);
-
+    const tokenResult = await getAccessToken(supabase, state, account, passwordMd5, appKey, appSecret);
+    state = tokenResult.state;
+    
+    const locations = await getAllDevicesLocation(supabase, state, imei, tokenResult.token, appKey, appSecret);
     const loc = locations.find((l: any) => l.imei === imei);
     
     if (loc && loc.status !== "0" && loc.lat && loc.lng) {
