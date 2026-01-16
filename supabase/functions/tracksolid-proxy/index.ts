@@ -10,12 +10,25 @@ const corsHeaders = {
 // Global token cache
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 
-// Batch location cache - cache for 60 seconds to reduce API calls
-// This means only 1 API call per minute even if 100 users open the app
+// Batch location cache - cache for 20 seconds for real-time updates
+// With 86,400 daily limit and 20s cache = max 4,320 calls/day (5% of limit)
 let batchLocationCache: { data: any[]; expiresAt: number } | null = null;
+const CACHE_DURATION_MS = 20000; // 20 seconds
 
-// Rate limit tracking - if blocked, wait before retrying
-let rateLimitState: { isBlocked: boolean; blockedUntil: number } = { isBlocked: false, blockedUntil: 0 };
+// Rate limit tracking with exponential backoff
+let rateLimitState: { 
+  isBlocked: boolean; 
+  blockedUntil: number;
+  consecutiveFailures: number;
+} = { isBlocked: false, blockedUntil: 0, consecutiveFailures: 0 };
+
+// Daily call counter - resets every 24 hours
+let dailyCallCounter: { count: number; resetAt: number } = { 
+  count: 0, 
+  resetAt: Date.now() + 24 * 60 * 60 * 1000 
+};
+const DAILY_CALL_SOFT_LIMIT = 50000; // At 50k calls, increase cache duration
+const CACHE_DURATION_THROTTLED_MS = 60000; // 60 seconds when throttled
 
 /**
  * Simple MD5 implementation for signing
@@ -216,12 +229,23 @@ async function getAllDevicesLocation(
   appKey: string,
   appSecret: string
 ): Promise<any[]> {
-  // Check if rate limited
+  // Reset daily counter if past reset time
+  if (Date.now() > dailyCallCounter.resetAt) {
+    console.log("[TrackSolid Proxy] Resetting daily call counter");
+    dailyCallCounter = { count: 0, resetAt: Date.now() + 24 * 60 * 60 * 1000 };
+  }
+
+  // Check if rate limited (exponential backoff)
   if (rateLimitState.isBlocked && Date.now() < rateLimitState.blockedUntil) {
     const waitMinutes = Math.ceil((rateLimitState.blockedUntil - Date.now()) / 60000);
-    console.log(`[TrackSolid Proxy] Rate limited, returning cached data. Wait ${waitMinutes} min`);
+    console.log(`[TrackSolid Proxy] Rate limited (attempt ${rateLimitState.consecutiveFailures}), returning cached data. Wait ${waitMinutes} min`);
     return batchLocationCache?.data || [];
   }
+
+  // Determine cache duration based on daily usage
+  const currentCacheDuration = dailyCallCounter.count > DAILY_CALL_SOFT_LIMIT 
+    ? CACHE_DURATION_THROTTLED_MS 
+    : CACHE_DURATION_MS;
 
   // Check batch cache first
   if (batchLocationCache && Date.now() < batchLocationCache.expiresAt) {
@@ -266,24 +290,36 @@ async function getAllDevicesLocation(
   if (data.code !== 0) {
     if (data.code === 1004) cachedToken = null;
     
-    // Check for rate limiting error
-    if (data.message && (data.message.includes('频率过高') || data.message.includes('请求频率'))) {
-      console.log("[TrackSolid Proxy] Rate limited! Blocking for 5 minutes");
-      rateLimitState = { isBlocked: true, blockedUntil: Date.now() + 5 * 60 * 1000 };
+    // Check for rate limiting error (Chinese: "频率过高" = frequency too high, "请求频率" = request frequency)
+    if (data.message && (data.message.includes('频率过高') || data.message.includes('请求频率') || data.message.toLowerCase().includes('rate') || data.message.toLowerCase().includes('frequency'))) {
+      // Exponential backoff: 5 min -> 15 min -> 30 min
+      rateLimitState.consecutiveFailures++;
+      const backoffMinutes = Math.min(5 * Math.pow(2, rateLimitState.consecutiveFailures - 1), 30);
+      console.log(`[TrackSolid Proxy] Rate limited! Attempt ${rateLimitState.consecutiveFailures}, blocking for ${backoffMinutes} minutes`);
+      rateLimitState.isBlocked = true;
+      rateLimitState.blockedUntil = Date.now() + backoffMinutes * 60 * 1000;
     }
     
     throw new Error(`TrackSolid batch error: ${data.message}`);
   }
 
-  // Success - clear any rate limit state
-  rateLimitState = { isBlocked: false, blockedUntil: 0 };
+  // Success - clear rate limit state and increment daily counter
+  rateLimitState = { isBlocked: false, blockedUntil: 0, consecutiveFailures: 0 };
+  dailyCallCounter.count++;
+  
+  console.log(`[TrackSolid Proxy] Daily API calls: ${dailyCallCounter.count}/${DAILY_CALL_SOFT_LIMIT} (soft limit)`);
 
   const locations = data.result || [];
   
-  // Cache for 60 seconds - protects against multiple users opening app simultaneously
+  // Determine cache duration based on daily usage
+  const cacheDuration = dailyCallCounter.count > DAILY_CALL_SOFT_LIMIT 
+    ? CACHE_DURATION_THROTTLED_MS 
+    : CACHE_DURATION_MS;
+  
+  // Cache locations
   batchLocationCache = {
     data: locations,
-    expiresAt: Date.now() + 60000
+    expiresAt: Date.now() + cacheDuration
   };
 
   console.log(`[TrackSolid Proxy] Batch fetched ${locations.length} device locations`);
