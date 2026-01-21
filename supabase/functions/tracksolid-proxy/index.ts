@@ -264,7 +264,7 @@ async function getAccessToken(
     throw new Error(`Rate limited. Try again in ${rateLimitCheck.waitMinutes} minutes.`);
   }
 
-  console.log("[TrackSolid Proxy] Fetching new access token from API");
+  console.log(`[TrackSolid Proxy] Fetching new access token for account: ${account}, pwd_md5_prefix: ${passwordMd5.substring(0, 8)}...`);
   
   const params = {
     method: "jimi.oauth.token.get",
