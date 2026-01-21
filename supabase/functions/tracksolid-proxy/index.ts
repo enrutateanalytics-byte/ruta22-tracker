@@ -342,14 +342,14 @@ async function getAccessToken(
 }
 
 /**
- * Get locations for ALL devices using the batch method (jimi.user.device.location.list)
- * This method has a limit of 86,400 calls/day vs 8,640 for individual calls
- * It requires "target" (account ID) and returns all devices for that account
+ * Get locations for devices using jimi.device.location.get method
+ * This method accepts IMEIs directly (up to 100 per request)
+ * Limit: 8,640 calls/day (~6 calls/minute for 24h)
  */
-async function getAllDevicesLocation(
+async function getDevicesLocationByImei(
   supabase: any,
   state: RateLimitState,
-  account: string,
+  imeis: string,
   accessToken: string,
   appKey: string,
   appSecret: string
@@ -374,23 +374,24 @@ async function getAllDevicesLocation(
 
   // Check cache first
   if (isCacheValid(state)) {
-    console.log("[TrackSolid Proxy] Using cached batch locations from DB");
+    console.log("[TrackSolid Proxy] Using cached locations from DB");
     return state.cached_locations || [];
   }
 
-  console.log(`[TrackSolid Proxy] Fetching batch locations for account (target)`);
+  const imeiCount = imeis.split(',').length;
+  console.log(`[TrackSolid Proxy] Fetching locations for ${imeiCount} devices by IMEI`);
   
-  // jimi.user.device.location.list requires "target" (account ID), not "imeis"
-  // This method returns ALL devices for the account with 86,400 calls/day limit
+  // jimi.device.location.get - uses imeis parameter directly
+  // Limit: 8,640 calls/day, max 100 IMEIs per call
   const params = {
-    method: "jimi.user.device.location.list",
+    method: "jimi.device.location.get",
     timestamp: getTimestamp(),
     app_key: appKey,
     sign_method: "md5",
     v: "1.0",
     format: "json",
     access_token: accessToken,
-    target: account, // Use account ID as target
+    imeis: imeis, // Comma-separated list of IMEIs
   };
 
   const sign = generateSign(params, appSecret);
@@ -455,6 +456,7 @@ async function getAllDevicesLocation(
 
   // Success - update state
   const locations = data.result || [];
+  console.log(`[TrackSolid Proxy] Fetched ${locations.length} devices. Raw result:`, JSON.stringify(data.result).substring(0, 500));
   const newDailyCount = state.daily_call_count + 1;
   
   // Determine cache duration based on daily usage
@@ -581,7 +583,7 @@ serve(async (req) => {
       const tokenResult = await getAccessToken(supabase, state, account, passwordMd5, appKey, appSecret);
       state = tokenResult.state;
       
-      const locations = await getAllDevicesLocation(supabase, state, account, tokenResult.token, appKey, appSecret);
+      const locations = await getDevicesLocationByImei(supabase, state, imeis, tokenResult.token, appKey, appSecret);
 
       const results = locations.map((loc: any) => {
         const isAvailable = loc.status !== "0" && loc.lat && loc.lng;
@@ -614,7 +616,7 @@ serve(async (req) => {
     const tokenResult = await getAccessToken(supabase, state, account, passwordMd5, appKey, appSecret);
     state = tokenResult.state;
     
-    const locations = await getAllDevicesLocation(supabase, state, account, tokenResult.token, appKey, appSecret);
+    const locations = await getDevicesLocationByImei(supabase, state, imei, tokenResult.token, appKey, appSecret);
     const loc = locations.find((l: any) => l.imei === imei);
     
     if (loc && loc.status !== "0" && loc.lat && loc.lng) {
