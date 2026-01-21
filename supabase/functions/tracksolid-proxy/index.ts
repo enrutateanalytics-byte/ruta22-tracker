@@ -344,11 +344,12 @@ async function getAccessToken(
 /**
  * Get locations for ALL devices using the batch method (jimi.user.device.location.list)
  * This method has a limit of 86,400 calls/day vs 8,640 for individual calls
+ * It requires "target" (account ID) and returns all devices for that account
  */
 async function getAllDevicesLocation(
   supabase: any,
   state: RateLimitState,
-  imeis: string,
+  account: string,
   accessToken: string,
   appKey: string,
   appSecret: string
@@ -377,8 +378,10 @@ async function getAllDevicesLocation(
     return state.cached_locations || [];
   }
 
-  console.log(`[TrackSolid Proxy] Fetching batch locations for ${imeis.split(',').length} devices`);
+  console.log(`[TrackSolid Proxy] Fetching batch locations for account (target)`);
   
+  // jimi.user.device.location.list requires "target" (account ID), not "imeis"
+  // This method returns ALL devices for the account with 86,400 calls/day limit
   const params = {
     method: "jimi.user.device.location.list",
     timestamp: getTimestamp(),
@@ -387,7 +390,7 @@ async function getAllDevicesLocation(
     v: "1.0",
     format: "json",
     access_token: accessToken,
-    imeis: imeis,
+    target: account, // Use account ID as target
   };
 
   const sign = generateSign(params, appSecret);
@@ -404,25 +407,32 @@ async function getAllDevicesLocation(
     body: formData.toString(),
   });
 
-  if (!response.ok) {
-    throw new Error(`TrackSolid batch location failed: ${response.status}`);
-  }
-
+  // Always read the response body to understand the error
   const data = await response.json();
-  console.log("[TrackSolid Proxy] Batch API response code:", data.code);
+  console.log("[TrackSolid Proxy] Batch API response - status:", response.status, "code:", data.code, "message:", data.message);
   
-  if (data.code !== 0) {
+  // Handle HTTP errors or API errors
+  if (!response.ok || data.code !== 0) {
     if (data.code === 1004) {
       // Token expired, clear it
+      console.log("[TrackSolid Proxy] Token expired (code 1004), clearing cache");
       await updateRateLimitState(supabase, { cached_token: null, token_expires_at: null });
     }
     
-    // Check for rate limiting error
-    if (data.message && (data.message.includes('频率过高') || data.message.includes('请求频率') || data.message.toLowerCase().includes('rate') || data.message.toLowerCase().includes('frequency'))) {
+    // Check for rate limiting error (various possible messages)
+    const errorMsg = data.message || '';
+    const isRateLimitError = errorMsg.includes('频率过高') || 
+                              errorMsg.includes('请求频率') || 
+                              errorMsg.toLowerCase().includes('rate') || 
+                              errorMsg.toLowerCase().includes('frequency') ||
+                              errorMsg.toLowerCase().includes('too many') ||
+                              data.code === 1003; // Common rate limit code
+    
+    if (isRateLimitError) {
       const failures = state.consecutive_failures + 1;
       const backoffMinutes = Math.min(5 * Math.pow(2, failures - 1), 30);
       
-      console.log(`[TrackSolid Proxy] Locations rate limited! Attempt ${failures}, blocking for ${backoffMinutes} minutes`);
+      console.log(`[TrackSolid Proxy] Rate limited! Attempt ${failures}, blocking for ${backoffMinutes} minutes`);
       
       await updateRateLimitState(supabase, {
         is_blocked: true,
@@ -434,7 +444,13 @@ async function getAllDevicesLocation(
       return state.cached_locations || [];
     }
     
-    throw new Error(`TrackSolid batch error: ${data.message}`);
+    // Return cached data on any error, don't throw
+    console.log("[TrackSolid Proxy] API error, returning cached data if available");
+    if (state.cached_locations && state.cached_locations.length > 0) {
+      return state.cached_locations;
+    }
+    
+    throw new Error(`TrackSolid batch error: ${data.code} - ${data.message}`);
   }
 
   // Success - update state
@@ -485,6 +501,22 @@ serve(async (req) => {
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode");
     const imeis = url.searchParams.get("imeis");
+
+    // RESET MODE: Clear token and rate limit state
+    if (mode === "reset") {
+      console.log("[TrackSolid Proxy] Resetting connection state");
+      await updateRateLimitState(supabase, {
+        cached_token: null,
+        token_expires_at: null,
+        is_blocked: false,
+        blocked_until: null,
+        consecutive_failures: 0,
+      });
+      return new Response(
+        JSON.stringify({ success: true, message: "Connection reset successfully" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get current rate limit state from database
     let state = await getRateLimitState(supabase);
@@ -549,7 +581,7 @@ serve(async (req) => {
       const tokenResult = await getAccessToken(supabase, state, account, passwordMd5, appKey, appSecret);
       state = tokenResult.state;
       
-      const locations = await getAllDevicesLocation(supabase, state, imeis, tokenResult.token, appKey, appSecret);
+      const locations = await getAllDevicesLocation(supabase, state, account, tokenResult.token, appKey, appSecret);
 
       const results = locations.map((loc: any) => {
         const isAvailable = loc.status !== "0" && loc.lat && loc.lng;
@@ -582,7 +614,7 @@ serve(async (req) => {
     const tokenResult = await getAccessToken(supabase, state, account, passwordMd5, appKey, appSecret);
     state = tokenResult.state;
     
-    const locations = await getAllDevicesLocation(supabase, state, imei, tokenResult.token, appKey, appSecret);
+    const locations = await getAllDevicesLocation(supabase, state, account, tokenResult.token, appKey, appSecret);
     const loc = locations.find((l: any) => l.imei === imei);
     
     if (loc && loc.status !== "0" && loc.lat && loc.lng) {
