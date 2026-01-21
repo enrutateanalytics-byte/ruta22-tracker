@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TRACKSOLID_API_URL = "https://hk-open.tracksolidpro.com/route/rest";
+const TRACKSOLID_API_URL = "https://us-open.tracksolidpro.com/route/rest";
 const CACHE_DURATION_SECONDS = 20; // 20 seconds cache for real-time updates
 const CACHE_DURATION_THROTTLED_SECONDS = 60; // 60 seconds when near daily limit
 const DAILY_CALL_SOFT_LIMIT = 50000; // At 50k calls, increase cache duration
