@@ -264,7 +264,7 @@ async function getAccessToken(
     throw new Error(`Rate limited. Try again in ${rateLimitCheck.waitMinutes} minutes.`);
   }
 
-  console.log(`[TrackSolid Proxy] Fetching new access token for account: ${account}, pwd_md5_prefix: ${passwordMd5.substring(0, 8)}...`);
+  console.log(`[TrackSolid Proxy] Fetching new access token for account: ${account}, pwd_md5_prefix: ${passwordMd5.substring(0, 8)}..., app_key_prefix: ${appKey.substring(0, 8)}...`);
   
   const params = {
     method: "jimi.oauth.token.get",
@@ -297,6 +297,7 @@ async function getAccessToken(
   }
 
   const data = await response.json();
+  console.log(`[TrackSolid Proxy] Auth response: code=${data.code}, message=${data.message || 'none'}`);
   
   if (data.code !== 0) {
     // Check for rate limiting error
