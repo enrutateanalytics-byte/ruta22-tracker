@@ -1,0 +1,1 @@
+UPDATE gps_units SET is_active = false WHERE imei = 359857083600601;
