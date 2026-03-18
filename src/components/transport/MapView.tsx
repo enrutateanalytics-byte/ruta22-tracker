@@ -181,8 +181,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         ))} */}
         
-        {/* Autobuses en tiempo real */}
-        {busUnits.length > 0 ? (
+        {/* TEMPORARILY DISABLED: Autobuses en tiempo real */}
+        {/* {busUnits.length > 0 ? (
           busUnits.map((unit, index) => (
             <GoogleBusMarker
               key={`unit-${unit.id}`}
@@ -194,8 +194,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
             />
           ))
         ) : (
-          <div /> // No buses to show
-        )}
+          <div />
+        )} */}
 
         {/* User location marker */}
         {position && (
