@@ -68,7 +68,9 @@ export const useRouteData = (): UseRouteDataReturn => {
 
   // No simulation - only real API data
 
-  // Fetch real-time bus locations from both TEBSA and TrackSolid APIs
+  // TEMPORARILY DISABLED: Real-time bus location polling
+  // To re-enable, uncomment the useEffect below
+  /*
   useEffect(() => {
     if (!currentRoute) return;
 
@@ -77,17 +79,12 @@ export const useRouteData = (): UseRouteDataReturn => {
         setApiError(null);
         console.log('[useRouteData] Fetching bus data from GPS providers...');
         
-        // Get units by provider from database
         const [tebsaUnits, trackSolidUnits, economicNumberMap] = await Promise.all([
           gpsUnitsService.getUnitsByProvider('tebsa'),
           gpsUnitsService.getUnitsByProvider('tracksolid'),
           gpsUnitsService.getImeiToEconomicNumberMap()
         ]);
 
-        console.log(`[useRouteData] Found ${tebsaUnits.length} TEBSA units, ${trackSolidUnits.length} TrackSolid units`);
-
-        // Fetch locations from both providers in parallel
-        // TrackSolid uses batch method (1 API call for all units) to avoid rate limiting
         const [tebsaLocations, trackSolidLocations] = await Promise.all([
           tebsaUnits.length > 0 
             ? Promise.all(tebsaUnits.map(unit => 
@@ -101,7 +98,6 @@ export const useRouteData = (): UseRouteDataReturn => {
             : Promise.resolve([])
         ]);
 
-        // Transform TrackSolid units to TebsaUnit format for compatibility
         const transformedTrackSolidUnits: TebsaUnit[] = trackSolidLocations.map(unit => ({
           id: unit.id.toString(),
           latitud: unit.lat,
@@ -112,7 +108,6 @@ export const useRouteData = (): UseRouteDataReturn => {
           economicNumber: economicNumberMap.get(unit.id)
         }));
 
-        // Combine results from both providers
         const allUnits: TebsaUnit[] = [
           ...tebsaLocations.map(unit => ({
             ...unit,
@@ -122,13 +117,11 @@ export const useRouteData = (): UseRouteDataReturn => {
         ];
         
         if (allUnits.length > 0) {
-          console.log(`[useRouteData] Successfully fetched ${allUnits.length} units (${tebsaLocations.length} TEBSA, ${trackSolidLocations.length} TrackSolid)`);
           setBusUnits(allUnits);
           setIsApiConnected(true);
           setIsRetrying(false);
           setLastUpdate(new Date());
         } else {
-          console.warn('[useRouteData] No units available from any provider');
           setBusUnits([]);
           setIsApiConnected(false);
           setLastUpdate(new Date());
@@ -136,7 +129,6 @@ export const useRouteData = (): UseRouteDataReturn => {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[useRouteData] GPS API error:', errorMessage);
-        
         setApiError(errorMessage);
         setIsApiConnected(false);
         setIsRetrying(false);
@@ -144,14 +136,11 @@ export const useRouteData = (): UseRouteDataReturn => {
       }
     };
 
-    // Initial fetch
     fetchBusLocations();
-
-    // Set up polling every 30 seconds for real-time updates
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
-
     return () => clearInterval(interval);
   }, [currentRoute]);
+  */
 
   return {
     // Routes data
