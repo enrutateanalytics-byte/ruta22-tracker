@@ -66,11 +66,7 @@ export const useRouteData = (): UseRouteDataReturn => {
     loadRoutes();
   }, []);
 
-  // No simulation - only real API data
-
-  // TEMPORARILY DISABLED: Real-time bus location polling
-  // To re-enable, uncomment the useEffect below
-  /*
+  // Real-time bus location polling
   useEffect(() => {
     if (!currentRoute) return;
 
@@ -140,7 +136,6 @@ export const useRouteData = (): UseRouteDataReturn => {
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
     return () => clearInterval(interval);
   }, [currentRoute]);
-  */
 
   return {
     // Routes data
