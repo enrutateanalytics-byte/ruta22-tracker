@@ -181,21 +181,17 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         ))} */}
         
-        {/* TEMPORARILY DISABLED: Autobuses en tiempo real */}
-        {/* {busUnits.length > 0 ? (
-          busUnits.map((unit, index) => (
-            <GoogleBusMarker
-              key={`unit-${unit.id}`}
-              position={{ lat: unit.latitud, lng: unit.longitud }}
-              velocity={unit.velocidad}
-              orientation={unit.orientacion}
-              unitId={unit.id}
-              economicNumber={unit.economicNumber}
-            />
-          ))
-        ) : (
-          <div />
-        )} */}
+        {/* Autobuses en tiempo real */}
+        {busUnits.length > 0 && busUnits.map((unit) => (
+          <GoogleBusMarker
+            key={`unit-${unit.id}`}
+            position={{ lat: unit.latitud, lng: unit.longitud }}
+            velocity={unit.velocidad}
+            orientation={unit.orientacion}
+            unitId={unit.id}
+            economicNumber={unit.economicNumber}
+          />
+        ))}
 
         {/* User location marker */}
         {position && (
