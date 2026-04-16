@@ -66,11 +66,32 @@ export const useRouteData = (): UseRouteDataReturn => {
     loadRoutes();
   }, []);
 
+  // Check if current time is within service hours (Tijuana time: 4:30 AM - 10:00 PM, every day)
+  const isWithinServiceHours = (): boolean => {
+    const tijuanaTime = new Date().toLocaleString('en-US', { timeZone: 'America/Tijuana' });
+    const now = new Date(tijuanaTime);
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const totalMinutes = hours * 60 + minutes;
+    const startMinutes = 4 * 60 + 30; // 4:30 AM
+    const endMinutes = 22 * 60; // 10:00 PM
+    return totalMinutes >= startMinutes && totalMinutes < endMinutes;
+  };
+
   // Real-time bus location polling
   useEffect(() => {
     if (!currentRoute) return;
 
     const fetchBusLocations = async () => {
+      // Silently skip GPS fetch outside service hours
+      if (!isWithinServiceHours()) {
+        console.log('[useRouteData] Outside service hours (Tijuana 4:30 AM - 10:00 PM), skipping GPS fetch');
+        setBusUnits([]);
+        setIsApiConnected(false);
+        setLastUpdate(new Date());
+        return;
+      }
+
       try {
         setApiError(null);
         console.log('[useRouteData] Fetching bus data from GPS providers...');
