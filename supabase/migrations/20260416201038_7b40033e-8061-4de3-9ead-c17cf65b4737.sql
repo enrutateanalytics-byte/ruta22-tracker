@@ -1,0 +1,1 @@
+INSERT INTO public.gps_units (imei, economic_number, provider, is_active) VALUES (869066064959167, 'R22-1258', 'tracksolid', true);
