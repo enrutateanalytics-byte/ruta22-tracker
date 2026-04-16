@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import busIcon from "@/assets/autobus_circular.png";
+import { useEffect, useState, useRef, useCallback } from "react";
+import busIconSrc from "@/assets/autobus_circular.png";
 
 interface GoogleBusMarkerProps {
   position: { lat: number; lng: number };
@@ -9,23 +9,69 @@ interface GoogleBusMarkerProps {
   economicNumber?: string;
 }
 
+/**
+ * Creates a rotated version of the bus icon using an offscreen canvas.
+ * Returns a data URL that can be used as the marker icon.
+ */
+function createRotatedIcon(
+  img: HTMLImageElement,
+  angleDeg: number,
+  size: number
+): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate((angleDeg * Math.PI) / 180);
+  ctx.drawImage(img, -size / 2, -size / 2, size, size);
+  return canvas.toDataURL("image/png");
+}
+
 export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitId, economicNumber }: GoogleBusMarkerProps) => {
   const [marker, setMarker] = useState<any>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Preload bus icon image once
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imgRef.current = img;
+      setImgLoaded(true);
+    };
+    img.src = busIconSrc;
+  }, []);
+
+  const getIconConfig = useCallback((vel: number, orient: number) => {
+    const scale = vel > 0 ? 0.8 + Math.min(vel / 100, 0.4) : 0.8;
+    const pixelSize = Math.round(39.744 * scale);
+
+    if (imgRef.current) {
+      const rotatedUrl = createRotatedIcon(imgRef.current, orient, pixelSize);
+      return {
+        url: rotatedUrl,
+        scaledSize: new (window as any).google.maps.Size(pixelSize, pixelSize),
+        anchor: new (window as any).google.maps.Point(pixelSize / 2, pixelSize / 2),
+      };
+    }
+    // Fallback without rotation
+    return {
+      url: busIconSrc,
+      scaledSize: new (window as any).google.maps.Size(pixelSize, pixelSize),
+      anchor: new (window as any).google.maps.Point(pixelSize / 2, pixelSize / 2),
+    };
+  }, []);
 
   useEffect(() => {
     // Find the Google Map instance
     const mapElement = document.querySelector('[data-map]') as any;  
-    if (!mapElement?.mapInstance || !(window as any).google) return;
+    if (!mapElement?.mapInstance || !(window as any).google || !imgLoaded) return;
 
     const map = mapElement.mapInstance;
 
-    // Create custom bus icon using the uploaded icon (80% larger total)
-    const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
-    const busIconConfig = {
-      url: busIcon,
-      scaledSize: new (window as any).google.maps.Size(39.744 * scale, 39.744 * scale),
-      anchor: new (window as any).google.maps.Point(19.872 * scale, 19.872 * scale),
-    };
+    const busIconConfig = getIconConfig(velocity, orientation);
 
     // Create info window content
     const infoContent = `
@@ -78,26 +124,15 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
     return () => {
       newMarker.setMap(null);
     };
-  }, []); // Empty dependency array for initial creation
+  }, [imgLoaded]); // Re-create when image loads
 
-  // Update marker position when position changes
+  // Update marker position, icon rotation when props change
   useEffect(() => {
-    if (!marker) return;
+    if (!marker || !imgLoaded) return;
     
-    // Smooth animation to new position
     marker.setPosition(position);
-    
-    // Update icon with new velocity and orientation
-    if (velocity !== undefined && orientation !== undefined) {
-      const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
-      const updatedIcon = {
-        url: busIcon,
-        scaledSize: new (window as any).google.maps.Size(39.744 * scale, 39.744 * scale),
-        anchor: new (window as any).google.maps.Point(19.872 * scale, 19.872 * scale),
-      };
-      marker.setIcon(updatedIcon);
-    }
-  }, [position, marker, velocity, orientation]);
+    marker.setIcon(getIconConfig(velocity, orientation));
+  }, [position, marker, velocity, orientation, imgLoaded, getIconConfig]);
 
-  return null; // This component doesn't render anything directly
+  return null;
 };
