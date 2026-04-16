@@ -124,26 +124,15 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
     return () => {
       newMarker.setMap(null);
     };
-  }, []); // Empty dependency array for initial creation
+  }, [imgLoaded]); // Re-create when image loads
 
-  // Update marker position when position changes
+  // Update marker position, icon rotation when props change
   useEffect(() => {
-    if (!marker) return;
+    if (!marker || !imgLoaded) return;
     
-    // Smooth animation to new position
     marker.setPosition(position);
-    
-    // Update icon with new velocity and orientation
-    if (velocity !== undefined && orientation !== undefined) {
-      const scale = velocity > 0 ? 0.8 + Math.min(velocity / 100, 0.4) : 0.8;
-      const updatedIcon = {
-        url: busIcon,
-        scaledSize: new (window as any).google.maps.Size(39.744 * scale, 39.744 * scale),
-        anchor: new (window as any).google.maps.Point(19.872 * scale, 19.872 * scale),
-      };
-      marker.setIcon(updatedIcon);
-    }
-  }, [position, marker, velocity, orientation]);
+    marker.setIcon(getIconConfig(velocity, orientation));
+  }, [position, marker, velocity, orientation, imgLoaded, getIconConfig]);
 
-  return null; // This component doesn't render anything directly
+  return null;
 };
