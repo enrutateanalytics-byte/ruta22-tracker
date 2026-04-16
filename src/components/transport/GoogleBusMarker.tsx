@@ -45,8 +45,7 @@ export const GoogleBusMarker = ({ position, velocity = 0, orientation = 0, unitI
   }, []);
 
   const getIconConfig = useCallback((vel: number, orient: number) => {
-    const scale = vel > 0 ? 0.8 + Math.min(vel / 100, 0.4) : 0.8;
-    const pixelSize = Math.round(39.744 * scale);
+    const pixelSize = 46;
 
     if (imgRef.current) {
       const rotatedUrl = createRotatedIcon(imgRef.current, orient, pixelSize);
