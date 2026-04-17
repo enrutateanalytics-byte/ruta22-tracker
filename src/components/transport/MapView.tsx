@@ -26,8 +26,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
     isLoadingRoutes 
   } = useRouteData();
   
-  // Use prop route if provided, otherwise use hook route
-  const currentRoute = propCurrentRoute || hookCurrentRoute;
+  // Prefer prop route; fall back to hook route
+  const currentRoute = propCurrentRoute ?? hookCurrentRoute;
   const [selectedStop, setSelectedStop] = useState<CompleteRoute['stops'][0] | null>(null);
   
   // Geolocation
