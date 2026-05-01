@@ -9,8 +9,12 @@ interface AuthContextValue {
   loading: boolean;
   signUp: (phone: string, password: string) => Promise<{ error: string | null }>;
   signIn: (phone: string, password: string) => Promise<{ error: string | null }>;
+  signInAdmin: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
+
+// Only this email is allowed to use the admin login form.
+export const ADMIN_EMAIL = "gina@enrutate.com";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
