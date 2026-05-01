@@ -15,6 +15,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
   const [refreshKey, setRefreshKey] = useState(0);
   const { routes, currentRoute, setCurrentRoute, isLoadingRoutes } = useRouteData();
+  const { user, isAdmin, signOut } = useAuth();
 
   const renderActiveView = () => {
     switch (activeTab) {
