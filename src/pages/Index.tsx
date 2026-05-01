@@ -6,7 +6,8 @@ import { InfoView } from "@/components/transport/InfoView";
 import { TabBar } from "@/components/transport/TabBar";
 import { RouteSelector } from "@/components/transport/RouteSelector";
 import { useRouteData } from "@/hooks/useRouteData";
-import { Settings } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Settings, LogIn, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 
@@ -14,6 +15,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<'map' | 'schedule' | 'info'>('map');
   const [refreshKey, setRefreshKey] = useState(0);
   const { routes, currentRoute, setCurrentRoute, isLoadingRoutes } = useRouteData();
+  const { user, isAdmin, signOut } = useAuth();
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -41,11 +43,32 @@ const Index = () => {
               isLoading={isLoadingRoutes}
             />
           </div>
-          {/* <Link to="/admin">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </Link> */}
+          <div className="flex items-center gap-1">
+            {isAdmin && (
+              <Link to="/admin">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" title="Panel admin">
+                  <Shield className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
+            {user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+                onClick={signOut}
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" title="Iniciar sesión">
+                  <LogIn className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 

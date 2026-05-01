@@ -4,24 +4,60 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Route, ArrowLeft, AlertTriangle, RefreshCw } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Route, ArrowLeft, AlertTriangle, RefreshCw, Loader2, Lock } from 'lucide-react'
+import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
 
 
 import { toast } from 'sonner'
 
 const AdminIndex = () => {
+  const { user, isAdmin, loading } = useAuth()
   const [activeSection, setActiveSection] = useState<'overview' | 'routes'>('overview')
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false)
   const [isUpdatingRuta22, setIsUpdatingRuta22] = useState(false)
 
   useEffect(() => {
-    // Always connected since we're using the integrated Supabase client
     setIsSupabaseConnected(true)
-    
-    // Remove auth redirect since admin is now public
   }, [])
+
+  // Auth guard
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+  if (!user) {
+    return <Navigate to="/auth" replace />
+  }
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+              <Lock className="h-6 w-6 text-destructive" />
+            </div>
+            <CardTitle>Acceso restringido</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Tu cuenta no tiene permisos de administrador.
+            </p>
+            <Link to="/">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver a la app
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
 
   const handleUpdateWithNewKML = async () => {
