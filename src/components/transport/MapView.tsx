@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { GoogleMapContainer } from "@/components/transport/GoogleMapContainer";
 import { GoogleBusMarker } from "@/components/transport/GoogleBusMarker";
 import { GoogleStopMarker } from "@/components/transport/GoogleStopMarker";
@@ -6,8 +7,9 @@ import { GoogleRoutePolyline } from "@/components/transport/GoogleRoutePolyline"
 import { GoogleUserLocationMarker } from "@/components/transport/GoogleUserLocationMarker";
 import { useRouteData } from "@/hooks/useRouteData";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X, MapPin, Loader2 } from "lucide-react";
+import { X, MapPin, Loader2, Lock } from "lucide-react";
 import { type CompleteRoute } from "@/services/routeService";
 import { toast } from "sonner";
 
