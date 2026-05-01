@@ -43,11 +43,32 @@ const Index = () => {
               isLoading={isLoadingRoutes}
             />
           </div>
-          {/* <Link to="/admin">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </Link> */}
+          <div className="flex items-center gap-1">
+            {isAdmin && (
+              <Link to="/admin">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" title="Panel admin">
+                  <Shield className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
+            {user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+                onClick={signOut}
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" title="Iniciar sesión">
+                  <LogIn className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
