@@ -10,12 +10,13 @@ import { Loader2, Phone, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const Auth = () => {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn, signUp, signInAdmin } = useAuth();
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [tab, setTab] = useState<"login" | "register">("register");
+  const [tab, setTab] = useState<"login" | "register" | "admin">("register");
 
   useEffect(() => {
     if (!loading && user) navigate("/", { replace: true });
@@ -24,14 +25,20 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const fn = tab === "login" ? signIn : signUp;
-    const { error } = await fn(phone, password);
-    setSubmitting(false);
-    if (error) {
-      toast.error(error);
+    let result: { error: string | null };
+    if (tab === "admin") {
+      result = await signInAdmin(email, password);
+    } else if (tab === "login") {
+      result = await signIn(phone, password);
     } else {
-      toast.success(tab === "login" ? "Sesión iniciada" : "Cuenta creada con éxito");
-      navigate("/", { replace: true });
+      result = await signUp(phone, password);
+    }
+    setSubmitting(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(tab === "register" ? "Cuenta creada con éxito" : "Sesión iniciada");
+      navigate(tab === "admin" ? "/admin" : "/", { replace: true });
     }
   };
 
@@ -54,26 +61,42 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={tab} onValueChange={(v) => setTab(v as "login" | "register")}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as "login" | "register" | "admin")}>
+              <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="register">Crear cuenta</TabsTrigger>
                 <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
+                <TabsTrigger value="admin">Admin</TabsTrigger>
               </TabsList>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono celular</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    inputMode="tel"
-                    placeholder="664 123 4567"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    autoComplete="tel"
-                  />
-                </div>
+                {tab === "admin" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Correo del administrador</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="correo@ejemplo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Teléfono celular</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="664 123 4567"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      autoComplete="tel"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
                   <Input
@@ -84,11 +107,19 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    autoComplete={tab === "login" ? "current-password" : "new-password"}
+                    autoComplete={tab === "register" ? "new-password" : "current-password"}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : tab === "login" ? "Entrar" : "Crear cuenta"}
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : tab === "register" ? (
+                    "Crear cuenta"
+                  ) : tab === "admin" ? (
+                    "Entrar como admin"
+                  ) : (
+                    "Entrar"
+                  )}
                 </Button>
               </form>
 
