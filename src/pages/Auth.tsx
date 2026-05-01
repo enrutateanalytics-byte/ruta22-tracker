@@ -10,12 +10,13 @@ import { Loader2, Phone, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const Auth = () => {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn, signUp, signInAdmin } = useAuth();
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [tab, setTab] = useState<"login" | "register">("register");
+  const [tab, setTab] = useState<"login" | "register" | "admin">("register");
 
   useEffect(() => {
     if (!loading && user) navigate("/", { replace: true });
@@ -24,14 +25,20 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const fn = tab === "login" ? signIn : signUp;
-    const { error } = await fn(phone, password);
-    setSubmitting(false);
-    if (error) {
-      toast.error(error);
+    let result: { error: string | null };
+    if (tab === "admin") {
+      result = await signInAdmin(email, password);
+    } else if (tab === "login") {
+      result = await signIn(phone, password);
     } else {
-      toast.success(tab === "login" ? "Sesión iniciada" : "Cuenta creada con éxito");
-      navigate("/", { replace: true });
+      result = await signUp(phone, password);
+    }
+    setSubmitting(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(tab === "register" ? "Cuenta creada con éxito" : "Sesión iniciada");
+      navigate(tab === "admin" ? "/admin" : "/", { replace: true });
     }
   };
 
