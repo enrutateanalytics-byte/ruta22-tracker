@@ -184,8 +184,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         ))} */}
         
-        {/* Autobuses en tiempo real */}
-        {busUnits.length > 0 && busUnits.map((unit) => (
+        {/* Autobuses en tiempo real - solo visibles para usuarios autenticados */}
+        {user && busUnits.length > 0 && busUnits.map((unit) => (
           <GoogleBusMarker
             key={`unit-${unit.id}`}
             position={{ lat: unit.latitud, lng: unit.longitud }}
