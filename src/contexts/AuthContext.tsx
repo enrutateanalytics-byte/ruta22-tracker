@@ -109,12 +109,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: null };
   };
 
+  const signInAdmin = async (email: string, password: string) => {
+    const normalized = email.trim().toLowerCase();
+    if (normalized !== ADMIN_EMAIL) {
+      return { error: "Este correo no tiene acceso de administrador." };
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
+    if (error) {
+      if (error.message.toLowerCase().includes("invalid")) {
+        return { error: "Correo o contraseña incorrectos." };
+      }
+      return { error: error.message };
+    }
+    return { error: null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, loading, signUp, signIn, signInAdmin, signOut }}>
       {children}
     </AuthContext.Provider>
   );
