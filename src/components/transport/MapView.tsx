@@ -225,6 +225,26 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
 
       {/* Status bar removed as requested */}
 
+      {/* Invitación a registrarse para ver unidades en tiempo real */}
+      {!user && (
+        <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
+          <div className="bg-white/95 backdrop-blur rounded-lg shadow-transport border border-primary/20 p-4 pointer-events-auto">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-foreground text-sm">Ver unidades en tiempo real</h3>
+                <p className="text-xs text-muted-foreground">Regístrate gratis con tu teléfono</p>
+              </div>
+              <Link to="/auth">
+                <Button size="sm">Acceder</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stop popup */}
       {selectedStop && (
         <div className="absolute bottom-4 left-4 right-4 z-10">
