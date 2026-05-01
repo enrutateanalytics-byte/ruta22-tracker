@@ -18,6 +18,7 @@ interface MapViewProps {
 }
 
 export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) => {
+  const { user } = useAuth();
   const { 
     currentRoute: hookCurrentRoute, 
     busUnits, 
