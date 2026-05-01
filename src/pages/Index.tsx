@@ -6,7 +6,8 @@ import { InfoView } from "@/components/transport/InfoView";
 import { TabBar } from "@/components/transport/TabBar";
 import { RouteSelector } from "@/components/transport/RouteSelector";
 import { useRouteData } from "@/hooks/useRouteData";
-import { Settings } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Settings, LogIn, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 
