@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Route, ArrowLeft, AlertTriangle, RefreshCw, Loader2, Lock } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Route, ArrowLeft, AlertTriangle, RefreshCw, Loader2, Lock, MapPin, MapPinOff } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { appSettingsService } from '@/services/appSettingsService'
 
 
 import { toast } from 'sonner'
