@@ -19,10 +19,48 @@ const AdminIndex = () => {
   const [activeSection, setActiveSection] = useState<'overview' | 'routes'>('overview')
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false)
   const [isUpdatingRuta22, setIsUpdatingRuta22] = useState(false)
+  const [gpsEnabled, setGpsEnabled] = useState(true)
+  const [isLoadingGpsSetting, setIsLoadingGpsSetting] = useState(false)
 
   useEffect(() => {
     setIsSupabaseConnected(true)
   }, [])
+
+  // Load GPS visibility setting
+  useEffect(() => {
+    const loadGpsSetting = async () => {
+      try {
+        setIsLoadingGpsSetting(true)
+        const enabled = await appSettingsService.isGpsEnabled()
+        setGpsEnabled(enabled)
+      } catch (error) {
+        console.error('[Admin] Error loading GPS setting:', error)
+        toast.error('Error al cargar configuración de GPS')
+      } finally {
+        setIsLoadingGpsSetting(false)
+      }
+    }
+
+    loadGpsSetting()
+  }, [])
+
+  const handleGpsToggle = async (enabled: boolean) => {
+    try {
+      setIsLoadingGpsSetting(true)
+      const success = await appSettingsService.updateSetting('gps_enabled', enabled)
+      if (success) {
+        setGpsEnabled(enabled)
+        toast.success(enabled ? 'Unidades GPS visibles' : 'Unidades GPS ocultas')
+      } else {
+        toast.error('No se pudo actualizar la configuración')
+      }
+    } catch (error) {
+      console.error('[Admin] Error updating GPS setting:', error)
+      toast.error('Error al actualizar configuración de GPS')
+    } finally {
+      setIsLoadingGpsSetting(false)
+    }
+  }
 
   // Auth guard
   if (loading) {
