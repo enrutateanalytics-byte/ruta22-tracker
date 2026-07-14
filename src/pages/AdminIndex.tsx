@@ -235,6 +235,41 @@ const AdminIndex = () => {
             </CardContent>
           </Card>
 
+          {/* GPS Visibility Control */}
+          <Card className="md:col-span-1 lg:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ubicación en Tiempo Real</CardTitle>
+              {gpsEnabled ? (
+                <MapPin className="h-4 w-4 text-green-600" />
+              ) : (
+                <MapPinOff className="h-4 w-4 text-muted-foreground" />
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-2xl font-bold">
+                    {gpsEnabled ? 'Visible' : 'Oculta'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {gpsEnabled
+                      ? 'Los usuarios pueden ver las unidades en el mapa'
+                      : 'Las unidades están temporalmente ocultas'}
+                  </p>
+                </div>
+                <Switch
+                  checked={gpsEnabled}
+                  onCheckedChange={handleGpsToggle}
+                  disabled={isLoadingGpsSetting || !isSupabaseConnected}
+                  aria-label="Mostrar unidades en tiempo real"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isLoadingGpsSetting ? 'Actualizando...' : 'Solo administradores pueden cambiar esta opción.'}
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Quick Actions */}
           <Card className="md:col-span-2 lg:col-span-3">
             <CardHeader>
