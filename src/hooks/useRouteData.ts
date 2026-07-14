@@ -3,6 +3,7 @@ import { routeService, type CompleteRoute } from '@/services/routeService';
 import { tebsaApi, type TebsaUnit } from '@/services/tebsaApi';
 import { trackSolidApi, type TrackSolidUnit } from '@/services/trackSolidApi';
 import { gpsUnitsService } from '@/services/gpsUnitsService';
+import { appSettingsService } from '@/services/appSettingsService';
 import { TEBSA_CONFIG } from '@/config/tebsa';
 
 interface UseRouteDataReturn {
