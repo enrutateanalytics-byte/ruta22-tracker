@@ -93,6 +93,16 @@ export const useRouteData = (): UseRouteDataReturn => {
         return;
       }
 
+      // Check if GPS display is enabled (admin-controlled)
+      const gpsEnabled = await appSettingsService.isGpsEnabled();
+      if (!gpsEnabled) {
+        console.log('[useRouteData] GPS display is disabled by admin, skipping GPS fetch');
+        setBusUnits([]);
+        setIsApiConnected(false);
+        setLastUpdate(new Date());
+        return;
+      }
+
       try {
         setApiError(null);
         console.log('[useRouteData] Fetching bus data from GPS providers...');
