@@ -78,12 +78,19 @@ export const useRouteData = (): UseRouteDataReturn => {
     return totalMinutes >= startMinutes && totalMinutes < endMinutes;
   };
 
-  // Real-time bus location polling
+  // Real-time bus location polling — TEMPORALMENTE DESACTIVADO
+  // Para reactivar: descomentar el bloque completo de abajo.
+  useEffect(() => {
+    setBusUnits([]);
+    setIsApiConnected(false);
+    setLastUpdate(new Date());
+  }, [currentRoute]);
+
+  /* DESACTIVADO TEMPORALMENTE - visualización de unidades en tiempo real
   useEffect(() => {
     if (!currentRoute) return;
 
     const fetchBusLocations = async () => {
-      // Silently skip GPS fetch outside service hours
       if (!isWithinServiceHours()) {
         console.log('[useRouteData] Outside service hours (Tijuana 4:30 AM - 10:00 PM), skipping GPS fetch');
         setBusUnits([]);
@@ -94,8 +101,6 @@ export const useRouteData = (): UseRouteDataReturn => {
 
       try {
         setApiError(null);
-        console.log('[useRouteData] Fetching bus data from GPS providers...');
-        
         const [tebsaUnits, trackSolidUnits, economicNumberMap] = await Promise.all([
           gpsUnitsService.getUnitsByProvider('tebsa'),
           gpsUnitsService.getUnitsByProvider('tracksolid'),
@@ -103,15 +108,11 @@ export const useRouteData = (): UseRouteDataReturn => {
         ]);
 
         const [tebsaLocations, trackSolidLocations] = await Promise.all([
-          tebsaUnits.length > 0 
-            ? Promise.all(tebsaUnits.map(unit => 
-                tebsaApi.getUnitLocation(unit.imei)
-              )).then(results => results.flat())
+          tebsaUnits.length > 0
+            ? Promise.all(tebsaUnits.map(unit => tebsaApi.getUnitLocation(unit.imei))).then(results => results.flat())
             : Promise.resolve([]),
-          trackSolidUnits.length > 0 
-            ? trackSolidApi.getBatchLocations(
-                trackSolidUnits.map(unit => unit.imei)
-              )
+          trackSolidUnits.length > 0
+            ? trackSolidApi.getBatchLocations(trackSolidUnits.map(unit => unit.imei))
             : Promise.resolve([])
         ]);
 
@@ -126,23 +127,14 @@ export const useRouteData = (): UseRouteDataReturn => {
         }));
 
         const allUnits: TebsaUnit[] = [
-          ...tebsaLocations.map(unit => ({
-            ...unit,
-            economicNumber: economicNumberMap.get(parseInt(unit.id))
-          })),
+          ...tebsaLocations.map(unit => ({ ...unit, economicNumber: economicNumberMap.get(parseInt(unit.id)) })),
           ...transformedTrackSolidUnits
         ];
-        
-        if (allUnits.length > 0) {
-          setBusUnits(allUnits);
-          setIsApiConnected(true);
-          setIsRetrying(false);
-          setLastUpdate(new Date());
-        } else {
-          setBusUnits([]);
-          setIsApiConnected(false);
-          setLastUpdate(new Date());
-        }
+
+        setBusUnits(allUnits);
+        setIsApiConnected(allUnits.length > 0);
+        setIsRetrying(false);
+        setLastUpdate(new Date());
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('[useRouteData] GPS API error:', errorMessage);
@@ -157,6 +149,9 @@ export const useRouteData = (): UseRouteDataReturn => {
     const interval = setInterval(fetchBusLocations, TEBSA_CONFIG.POLLING_INTERVAL);
     return () => clearInterval(interval);
   }, [currentRoute]);
+  */
+
+
 
   return {
     // Routes data
