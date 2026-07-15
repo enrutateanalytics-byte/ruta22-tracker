@@ -4,100 +4,24 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Switch } from '@/components/ui/switch'
-import { Route, ArrowLeft, AlertTriangle, RefreshCw, Loader2, Lock, MapPin, MapPinOff } from 'lucide-react'
-import { Link, Navigate } from 'react-router-dom'
+import { Route, ArrowLeft, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
-import { useAuth } from '@/contexts/AuthContext'
-import { appSettingsService } from '@/services/appSettingsService'
 
 
 import { toast } from 'sonner'
 
 const AdminIndex = () => {
-  const { user, isAdmin, loading } = useAuth()
   const [activeSection, setActiveSection] = useState<'overview' | 'routes'>('overview')
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false)
   const [isUpdatingRuta22, setIsUpdatingRuta22] = useState(false)
-  const [gpsEnabled, setGpsEnabled] = useState(true)
-  const [isLoadingGpsSetting, setIsLoadingGpsSetting] = useState(false)
 
   useEffect(() => {
+    // Always connected since we're using the integrated Supabase client
     setIsSupabaseConnected(true)
+    
+    // Remove auth redirect since admin is now public
   }, [])
-
-  // Load GPS visibility setting
-  useEffect(() => {
-    const loadGpsSetting = async () => {
-      try {
-        setIsLoadingGpsSetting(true)
-        const enabled = await appSettingsService.isGpsEnabled()
-        setGpsEnabled(enabled)
-      } catch (error) {
-        console.error('[Admin] Error loading GPS setting:', error)
-        toast.error('Error al cargar configuración de GPS')
-      } finally {
-        setIsLoadingGpsSetting(false)
-      }
-    }
-
-    loadGpsSetting()
-  }, [])
-
-  const handleGpsToggle = async (enabled: boolean) => {
-    try {
-      setIsLoadingGpsSetting(true)
-      const success = await appSettingsService.updateSetting('gps_enabled', enabled)
-      if (success) {
-        setGpsEnabled(enabled)
-        toast.success(enabled ? 'Unidades GPS visibles' : 'Unidades GPS ocultas')
-      } else {
-        toast.error('No se pudo actualizar la configuración')
-      }
-    } catch (error) {
-      console.error('[Admin] Error updating GPS setting:', error)
-      toast.error('Error al actualizar configuración de GPS')
-    } finally {
-      setIsLoadingGpsSetting(false)
-    }
-  }
-
-  // Auth guard
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-  if (!user) {
-    return <Navigate to="/auth" replace />
-  }
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
-              <Lock className="h-6 w-6 text-destructive" />
-            </div>
-            <CardTitle>Acceso restringido</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Tu cuenta no tiene permisos de administrador.
-            </p>
-            <Link to="/">
-              <Button variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver a la app
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
 
 
   const handleUpdateWithNewKML = async () => {
@@ -231,41 +155,6 @@ const AdminIndex = () => {
               <div className="text-2xl font-bold">-</div>
               <p className="text-xs text-muted-foreground">
                 Paradas registradas en el sistema
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* GPS Visibility Control */}
-          <Card className="md:col-span-1 lg:col-span-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ubicación en Tiempo Real</CardTitle>
-              {gpsEnabled ? (
-                <MapPin className="h-4 w-4 text-green-600" />
-              ) : (
-                <MapPinOff className="h-4 w-4 text-muted-foreground" />
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="text-2xl font-bold">
-                    {gpsEnabled ? 'Visible' : 'Oculta'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {gpsEnabled
-                      ? 'Los usuarios pueden ver las unidades en el mapa'
-                      : 'Las unidades están temporalmente ocultas'}
-                  </p>
-                </div>
-                <Switch
-                  checked={gpsEnabled}
-                  onCheckedChange={handleGpsToggle}
-                  disabled={isLoadingGpsSetting || !isSupabaseConnected}
-                  aria-label="Mostrar unidades en tiempo real"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {isLoadingGpsSetting ? 'Actualizando...' : 'Solo administradores pueden cambiar esta opción.'}
               </p>
             </CardContent>
           </Card>

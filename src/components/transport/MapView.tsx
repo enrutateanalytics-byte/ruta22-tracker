@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 import { GoogleMapContainer } from "@/components/transport/GoogleMapContainer";
 import { GoogleBusMarker } from "@/components/transport/GoogleBusMarker";
 import { GoogleStopMarker } from "@/components/transport/GoogleStopMarker";
@@ -7,9 +6,8 @@ import { GoogleRoutePolyline } from "@/components/transport/GoogleRoutePolyline"
 import { GoogleUserLocationMarker } from "@/components/transport/GoogleUserLocationMarker";
 import { useRouteData } from "@/hooks/useRouteData";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X, MapPin, Loader2, Lock } from "lucide-react";
+import { X, MapPin, Loader2 } from "lucide-react";
 import { type CompleteRoute } from "@/services/routeService";
 import { toast } from "sonner";
 
@@ -18,7 +16,6 @@ interface MapViewProps {
 }
 
 export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) => {
-  const { user } = useAuth();
   const { 
     currentRoute: hookCurrentRoute, 
     busUnits, 
@@ -184,8 +181,8 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         ))} */}
         
-        {/* Autobuses en tiempo real - solo visibles para usuarios autenticados */}
-        {user && busUnits.length > 0 && busUnits.map((unit) => (
+        {/* Autobuses en tiempo real */}
+        {busUnits.length > 0 && busUnits.map((unit) => (
           <GoogleBusMarker
             key={`unit-${unit.id}`}
             position={{ lat: unit.latitud, lng: unit.longitud }}
@@ -224,26 +221,6 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
       </Button>
 
       {/* Status bar removed as requested */}
-
-      {/* Invitación a registrarse para ver unidades en tiempo real */}
-      {!user && (
-        <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
-          <div className="bg-white/95 backdrop-blur rounded-lg shadow-transport border border-primary/20 p-4 pointer-events-auto">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Lock className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-foreground text-sm">Ver unidades en tiempo real</h3>
-                <p className="text-xs text-muted-foreground">Regístrate gratis con tu teléfono</p>
-              </div>
-              <Link to="/auth">
-                <Button size="sm">Acceder</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Stop popup */}
       {selectedStop && (

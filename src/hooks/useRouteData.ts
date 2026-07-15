@@ -3,7 +3,6 @@ import { routeService, type CompleteRoute } from '@/services/routeService';
 import { tebsaApi, type TebsaUnit } from '@/services/tebsaApi';
 import { trackSolidApi, type TrackSolidUnit } from '@/services/trackSolidApi';
 import { gpsUnitsService } from '@/services/gpsUnitsService';
-import { appSettingsService } from '@/services/appSettingsService';
 import { TEBSA_CONFIG } from '@/config/tebsa';
 
 interface UseRouteDataReturn {
@@ -87,16 +86,6 @@ export const useRouteData = (): UseRouteDataReturn => {
       // Silently skip GPS fetch outside service hours
       if (!isWithinServiceHours()) {
         console.log('[useRouteData] Outside service hours (Tijuana 4:30 AM - 10:00 PM), skipping GPS fetch');
-        setBusUnits([]);
-        setIsApiConnected(false);
-        setLastUpdate(new Date());
-        return;
-      }
-
-      // Check if GPS display is enabled (admin-controlled)
-      const gpsEnabled = await appSettingsService.isGpsEnabled();
-      if (!gpsEnabled) {
-        console.log('[useRouteData] GPS display is disabled by admin, skipping GPS fetch');
         setBusUnits([]);
         setIsApiConnected(false);
         setLastUpdate(new Date());
