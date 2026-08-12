@@ -11,6 +11,9 @@ import { X, MapPin, Loader2 } from "lucide-react";
 import { type CompleteRoute } from "@/services/routeService";
 import { toast } from "sonner";
 
+// Visualización de unidades en tiempo real desactivada (app y web)
+const SHOW_LIVE_BUSES = false;
+
 interface MapViewProps {
   currentRoute?: CompleteRoute;
 }
