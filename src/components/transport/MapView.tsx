@@ -181,8 +181,9 @@ export const MapView = ({ currentRoute: propCurrentRoute }: MapViewProps = {}) =
           />
         ))} */}
         
-        {/* Autobuses en tiempo real */}
-        {busUnits.length > 0 && busUnits.map((unit) => (
+        {/* Autobuses en tiempo real — DESACTIVADO temporalmente (app y web).
+            Para reactivar: poner SHOW_LIVE_BUSES en true y reactivar el polling en useRouteData.ts */}
+        {SHOW_LIVE_BUSES && busUnits.map((unit) => (
           <GoogleBusMarker
             key={`unit-${unit.id}`}
             position={{ lat: unit.latitud, lng: unit.longitud }}
